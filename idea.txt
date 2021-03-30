@@ -1,0 +1,36 @@
+https://github.com/chungonion/COMP2432-os-labex/blob/master/Release/Project/ALS.c
+<====================================Goal====================================>
+1. Read input from argv / Read batch file
+2. Apply different scheduling algorithm
+3. Print out different booking
+4. Summary report
+5. Handle conflict / error
+<====================================function================================>
+input_call()
+void input_call(){
+	printf("Please enter booking:\n");
+}
+
+void addBooking() => add the request to allBooking.log
+void addBatchBooking (char inputFile[50]) => Read bat file, add the request to allBooking.log
+int check_argv;
+void run_FCFS();
+void run_PRIO();
+void run_OPTI();
+void print_schedule(char infilename[50],char outfilename[50],char *algo);
+void print_summary();
+<====================================temp file================================>
+allBooking.log
+FCFSBooking.log
+PRIOBooking.log
+OPTIBooking.log
+
+<=======================================Child=================================>
+3 child
+Child[1]: FCFS
+Child[2]: PRIO
+Child[3]: OPTI
+
+<=======================================Pipe=================================>
+child_pipe[3] => Child 1,3,5 write | Parent 2,4,6 read
+parent_pipe[3] => Child 2,4,6 read  | Parent 1,3,5 write
