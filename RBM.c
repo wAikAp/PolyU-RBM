@@ -6,7 +6,7 @@
 /*Regex*/
 #include <regex.h>
 
-const char* ADDMET = "addMetting";
+const char* ADDMET = "addMeeting";
 const char* ADDPRE = "addPresentation";
 const char* ADDCON = "addConference";
 const char* BOKDEV = "bookDevice";
@@ -25,30 +25,53 @@ int match(const char *string, const char *pattern)
   return 1;
 }
 
+
 int main(void) {
-  char *input;
-  char *pt;
+  char input[255];
+  char *str;
+  /*regx pattern*/
   char *ptnDate = "[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])";
   char *ptnTime = "(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9])";
+  char ptnKeyWord[100];
+  strcpy(ptnKeyWord, "(");
+  strcat(ptnKeyWord, ADDMET);
+  strcat(ptnKeyWord, "|");
+  strcat(ptnKeyWord, ADDPRE);
+  strcat(ptnKeyWord, "|");
+  strcat(ptnKeyWord, ADDCON);
+  strcat(ptnKeyWord, ")");
+  //printf("ptnKeyWord = %s",ptnKeyWord);
+  
+  /*program start*/
   printf("~~ WELCOME TO PolySME ~~\n");
   // while (1)
   {
     printf("Please enter booking:\n");
-    // fgets(str, sizeof str, stdin);
-    // scanf(" %[^;]",str);
+    // fgets(input, sizeof input, stdin);
+    // scanf(" %[^;]",input);
+    //get whole line
     scanf(" %[^;\n]",input);
-    //printf("str = %s\n",str);
     
-    pt = strtok (input," ");
-    while (pt != NULL) {
-        printf("%s\n", pt);
-        int m = match(pt,ptnDate);
-        if(m != 0)
+    str = strtok (input," ");
+    while (str != NULL) {
+        printf("%s\n", str);
+        //check pattern date
+        int m = match(str,ptnDate);
+        if(m)
         {
-          printf("match date = %s\n", pt);
+          printf("match date = %s\n", str);
+          m = 0;
+        }
+        //check pattern keyword
+        m = match(str,ptnKeyWord);
+        if(m)
+        {
+          printf("match keyword = %s\n", str);
+          m = 0;
         }
 
-        pt = strtok (NULL, " ");
+        //find next string
+        str = strtok (NULL, " ");
     }    
   }
   
