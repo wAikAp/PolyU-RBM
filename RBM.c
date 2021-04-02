@@ -14,6 +14,7 @@ const char* ADDBAT = "addBatch";
 const char* PRTBOK = "printBookings";
 const char* ENDPGM = "endProgram";
 
+//regex matching
 int match(const char *string, const char *pattern)
 {
   regex_t re;
