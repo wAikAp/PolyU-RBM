@@ -28,6 +28,12 @@ int pipes[6][2];
 
 //loop variable
 int i,j;
+
+//variables
+char fcfs[10];
+char prio[10];
+char opti[10];
+
 //<===============================Variables=============================>
 //<===============================function==============================>
 //Add keyword into array
@@ -78,7 +84,18 @@ char* extract_cmd(char *input){
         strcpy(&str[0], &str[0 + 3]);
         return (str);
       }
-
+      //Get fcfs request
+      if (strstr(str, "fcfs")!=NULL){
+        strcpy(fcfs,"fcfs");
+      }
+      //Check prio request
+      if (strstr(str, "prio")!=NULL){
+        strcpy(prio,"prio");
+      }
+      //Check opti request
+      if (strstr(str, "opti")!=NULL){
+        strcpy(opti,"opti");
+      }
       //find next string
       str = strtok (NULL, " ");
   }    
@@ -100,11 +117,18 @@ void batchFileHandler(char *filename){
     printf("%s",line);
   }
 }
-//<===============================function==============================>
 
+//FCFS
+void start_fcfs(){
+  FILE *outallBooking, *FCFSBooking;
+  outallBooking = fopen("allBooking.log", "r");
+  FCFSBooking = fopen("FCFSBooking.log", "a");
+}
+//<===============================function==============================>
 int main(void) {
-  char buf[80]={0};
-  /*
+  char buf[80]={0}; // Child read
+  char buf2[80]={0}; //Parent read
+
   //Create new pipe
   for (i = 0;i < 6; i++){
     if (pipe(pipes[i]) < 0){
@@ -129,68 +153,108 @@ int main(void) {
           close(pipes[j][1]);
         }
       }
-      read(pipes[i*2][0],buf,80);
       break;
     }
-  }
+  }  
 
-  //Close unused pipes in Parent
-  for (i = 0; i < 6; i++){
-    if(i%2 == 0){
-      close(pipes[i][0]);
-    } else if (i%2 != 0){
-      close(pipes[i][1]);
+  if(i!=3){ //Child Process
+    while(1){
+      memset(buf,0,sizeof(buf));
+      int n;
+      n = read(pipes[2*i][0],buf,4);
+      buf[n]=0;
+      if(strcmp(buf,"fcfs")==0){ //Child 0 => FCFS
+        start_fcfs();
+        //printf("I am Child %d: %s\n",i,buf);
+        strcpy(buf2, "Done");
+        write(pipes[1][1],buf2,4);
+      } else if (strcmp(buf,"prio")==0){ //Child 1 => PRIO
+        //printf("I am Child %d: %s\n",i,buf);
+        strcpy(buf2, "Done");
+        write(pipes[3][1],buf2,4);
+      } else if (strcmp(buf,"opti")==0){ //Child 2 => OPTI
+        //printf("I am Child %d: %s\n",i,buf);
+        strcpy(buf2, "Done");
+        write(pipes[5][1],buf2,4);
+      } else if (strcmp(buf,"end")==0){ //ALL Child exit
+        //printf("I am Child %d: %s\n",i,buf);
+        exit(0);
+      }
     }
-  }
-  */
-
-  FILE *outfilep;
-  define_keyword(ptnKeyWord);
-  //printf("ptnKeyWord = %s",ptnKeyWord);
-  /*program start*/
-  printf("~~ WELCOME TO PolySME ~~\n");
-  //Open allBooking.log
-  outfilep = fopen("allBooking.log", "a");
-  if (outfilep == NULL) {
-    printf("Error in opening output file\n");
-    exit(1);
-  }
-
-
-
-  //Get user input
-  while (1)
-  {
-    printf("Please enter booking:\n");
-    // fgets(input, sizeof input, stdin);
-    // scanf(" %[^;]",input);
-    //get whole line
-    fgets(input,255,stdin);
-    if (strstr(input, "endProgram") != NULL) {
-      remove("allBooking.log");
-      //remove("FCFSBooking.log");
-      //remove("PRIOBooking.log");
-      //remove("OPTIBooking.log");
-      printf("Bye!\n");
-      break;
-    } else if (strstr(input, "addBatch")!=NULL){
-      batchFileHandler(extract_cmd(input));
-    } else if (strstr(input, "printBookings")!=NULL){
-      printf("Check what request\n");
-    } else if (strstr(input, "addMeeting")!=NULL || 
-               strstr(input, "addPresentation")!=NULL ||
-               strstr(input, "addConference")!=NULL ||
-               strstr(input, "bookDevice")!=NULL){
-      fprintf(outfilep, "%s", input);
-    } else {
-      printf("Error, Please try again!\n");
+  } else { //Parent Process
+    //Close unused pipes in Parent
+    for (j = 0; j < 6; j++){
+      if(j%2 == 0){
+        close(pipes[j][0]);
+      } else if (j%2 != 0){
+        close(pipes[j][1]);
+      }
     }
-    //extract_cmd(input);
-    
+    FILE *outallBooking;
+    define_keyword(ptnKeyWord);
+    //printf("ptnKeyWord = %s",ptnKeyWord);
+    /*program start*/
+    printf("~~ WELCOME TO PolySME ~~\n");
+    //Open allBooking.log
+    outallBooking = fopen("allBooking.log", "a");
+    if (outallBooking == NULL) {
+      printf("Error in opening output file\n");
+      exit(1);
+    }
+    //Get user input
+    while (1)
+    {
+      printf("Please enter booking:\n");
+      // fgets(input, sizeof input, stdin);
+      // scanf(" %[^;]",input);
+      //get whole line
+      fgets(input,255,stdin);
+      if (strstr(input, "endProgram") != NULL) {
+        fclose(outallBooking);
+        for(j=0;j<5;j++){
+          if(j%2==0){
+            write(pipes[j][1],"end",3);
+          }
+        }
+        //write(pipes[0][1],"end",3);
+        wait(NULL);
+        //remove("allBooking.log");
+        //remove("FCFSBooking.log");
+        //remove("PRIOBooking.log");
+        //remove("OPTIBooking.log");
+        printf("Bye!\n");
+        exit(0);
+        //break;
+      } else if (strstr(input, "addBatch")!=NULL){
+        batchFileHandler(extract_cmd(input));
+      } else if (strstr(input, "printBookings")!=NULL){
+        extract_cmd(input);
+        if(strcmp(fcfs,"fcfs")==0){
+          write(pipes[0][1],"fcfs",4);
+          read(pipes[1][0],buf2,4); //Return to main flow
+          //printf("buf2=%s\n",buf2);
+          strcpy(fcfs,"");
+        } else if (strcmp(prio,"prio")==0){
+          write(pipes[2][1],"prio",4);
+          read(pipes[3][0],buf2,4); //Return to main flow
+          //printf("buf2=%s\n",buf2);
+          strcpy(prio,"");
+        } else if (strcmp(opti,"opti")==0){
+          write(pipes[4][1],"opti",4);
+          read(pipes[5][0],buf2,4); //Return to main flow
+          //printf("buf2=%s\n",buf2);
+          strcpy(opti,"");
+        }
+      } else if (strstr(input, "addMeeting")!=NULL || 
+                strstr(input, "addPresentation")!=NULL ||
+                strstr(input, "addConference")!=NULL ||
+                strstr(input, "bookDevice")!=NULL){
+        fprintf(outallBooking, "%s", input); //Write to allBooking.log
+      } else {
+        printf("Error, Please try again!\n");
+      }
+      //extract_cmd(input);
+    }
+    return 0;
   }
-  fclose(outfilep);
-  for(i=0;i<3;i++){
-    wait(NULL);
-  }
-  return 0;
 }
