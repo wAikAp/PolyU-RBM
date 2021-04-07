@@ -35,7 +35,7 @@ int child[3];
 int pipes[6][2];
 
 //loop variable
-int i,j;
+int i,j,x;
 
 //boolean variable
 bool accepted = true;
@@ -63,7 +63,14 @@ int projector_2K_2[168] = {0};
 int projector_4K[168] = {0}; 
 int screen_100_1[168] = {0}; 
 int screen_100_2[168] = {0}; 
-int screen_150[168] = {0}; 
+int screen_150[168] = {0};
+
+//Tenant variables
+int tenant_A_count = 0;
+int tenant_B_count = 0;
+int tenant_C_count = 0;
+int tenant_D_count = 0;
+int tenant_E_count = 0;
 
 //<===============================Variables=============================>
 //<===============================function==============================>
@@ -75,6 +82,8 @@ void define_keyword(char *ptnKeyWord){
   strcat(ptnKeyWord, ADDPRE);
   strcat(ptnKeyWord, "|");
   strcat(ptnKeyWord, ADDCON);
+  strcat(ptnKeyWord, "|");
+  strcat(ptnKeyWord, BOKDEV);
   strcat(ptnKeyWord, ")");
 }
 
@@ -322,19 +331,19 @@ bool extract_cmd(char *input){
   int count_device = 0;
   char device_1[30] = {0};
   char device_2[30] = {0};
+  char keyword[20];
 
   //printf("Input is %s\n",input);
   str = strtok (input," ");
   while (str != NULL) {
       int m;
-      //printf("%s\n", str);
-      /*check KEYWORD
-      //m = match(str,ptnKeyWord);
-      if(m)
-      {
-        //printf("match keyword = %s\n", str);
-        m = 0;
-      }*/
+      //Check whether book device
+      m = match(str,ptnKeyWord);
+      if(m){
+        if (strstr(str,"bookDevice")!=NULL){
+          strcpy(keyword,"bookDevice");
+        }
+      }
       //check TENANT
       m = match(str,ptnTenant);
       if(m)
@@ -418,8 +427,12 @@ bool extract_cmd(char *input){
   //printf("Device 2 = %s\n", device_2);
 
   //Check which room is available for the booking
-  if(!roomBookingHandler(start,number_of_people,hour)){
-    return(false);
+  if(strstr(keyword,"bookDevice")!=NULL){
+    ;
+  } else {
+    if(!roomBookingHandler(start,number_of_people,hour)){
+      return(false);
+    }
   }
   
   if(device_1[0] != '\0'){
@@ -458,12 +471,19 @@ void schedulingChecking(char *input){
   }    
 }
 
+//Check the device pair requirement
 bool devicePairChecking(char *input){
   char device_1[30] = {0};
   char device_2[30] = {0};
   int m;
   str = strtok (input," ");
   while (str != NULL) {
+      m = match(str,ptnKeyWord);
+      if(m){
+        if(strstr("bookDevice",str)!=NULL){
+          return(true);
+        }
+      }
       m = match(str,ptnTenant);
       if(m)
       {
@@ -514,6 +534,7 @@ bool devicePairChecking(char *input){
     return(true);
   }
 }
+
 //Get the batch filename
 char* batchFileName(char *input){
   str = strtok (input," ");
@@ -546,6 +567,416 @@ void batchFileHandler(char *filename){
   }
   fclose(infilep);
   fclose(outfilep);
+}
+
+//Count tenant record
+void countTenantRecord(char *input){
+  str = strtok (input," ");
+  while (str != NULL) {
+    int m = 0;
+    m = match(str,ptnTenant);
+    if(m)
+    {
+      if (strstr(str,"tenant_A")!=NULL){
+        tenant_A_count++;
+      } else if (strstr(str,"tenant_B")!=NULL){
+        tenant_B_count++;
+      } else if (strstr(str,"tenant_C")!=NULL){
+        tenant_C_count++;
+      } else if (strstr(str,"tenant_D")!=NULL){
+        tenant_D_count++;
+      } else if (strstr(str,"tenant_E")!=NULL){
+        tenant_E_count++;
+      }
+      m = 0;
+    }
+    str = strtok (NULL, " ");
+  }
+}
+
+//Arrange the tenant record
+int tenantRecordArrange(char *input){
+  str = strtok (input," ");
+  while (str != NULL) {
+    int m = 0;
+    m = match(str,ptnTenant);
+    if(m)
+    {
+      if (strstr(str,"tenant_A")!=NULL){
+        return(1);
+      } else if (strstr(str,"tenant_B")!=NULL){
+        return(2);
+      } else if (strstr(str,"tenant_C")!=NULL){
+        return(3);
+      } else if (strstr(str,"tenant_D")!=NULL){
+        return(4);
+      } else if (strstr(str,"tenant_E")!=NULL){
+        return(5);
+      }
+      m = 0;
+    }
+    str = strtok (NULL, " ");
+  }
+}
+
+//Reconstruct print pattern
+void printAppointmentSchedule(char *input, int accept_or_reject){
+  //Print Date, Start, End
+  int start_time = 0; int hour = 0; char end_time[5]; char column_1_to_3[100]; char keyword[20];
+  char column_4_to_5[100]; char column_6[100];
+  strncpy(column_1_to_3, input, strlen(input));
+  column_1_to_3[strlen(input)] = '\0';
+  //printf("column_1_to_3:%s\n",column_1_to_3);
+  str = strtok (column_1_to_3," ");
+  while (str != NULL) {
+    int m = 0;
+    m = match(str,ptnDate);
+    if(m){
+      printf("%-13s",str);
+      m = 0;
+    }
+    m = match(str,ptnTime);
+    if(m){
+      char time_char[2];
+      strncpy(time_char, str, 2);
+      start_time = atoi(time_char);
+      printf("%-8s",str);
+      m = 0;
+    }
+    m = match(str,ptnHour);
+    if(m){
+      hour = atoi(str);
+      sprintf(end_time,"%d",(start_time+hour));
+      strcat(end_time,":00");
+      printf("%-8s",end_time);
+      m = 0;
+    }
+    str = strtok (NULL, " ");
+  }
+  //Print Type, Room
+  strncpy(column_4_to_5, input, strlen(input));
+  column_4_to_5[strlen(input)] = '\0';
+  //printf("column_4_to_5:%s\n",column_4_to_5);
+  str = strtok (column_4_to_5," ");
+  while (str != NULL) {
+    int m = 0;
+    m = match(str,ptnKeyWord);
+    if(m){
+      if (strstr(str,"addMeeting")!=NULL){
+        printf("%-15s","Meeting");
+      } else if (strstr(str,"addPresentation")!=NULL){
+        printf("%-15s","Presentation");
+      } else if (strstr(str,"addConference")!=NULL){
+        printf("%-15s","Conference");
+      } else if (strstr(str,"bookDevice")!=NULL){
+        strcpy(keyword,"bookDevice");
+        printf("%-15s%-9s","*","*");
+      }
+    }
+    if (strstr(str,"room_A")!=NULL){
+      printf("%-9s","room_A");
+    } else if (strstr(str,"room_B")!=NULL){
+      printf("%-9s","room_B");
+    } else if (strstr(str,"room_C")!=NULL){
+      printf("%-9s","room_C");
+    }
+    str = strtok (NULL, " ");
+  }
+  //Print Devices
+  int counter = 0;
+  strncpy(column_6, input, strlen(input));
+  column_6[strlen(input)] = '\0';
+  //printf("column 6:%s\n",column_6);
+  str = strtok (column_6," ");
+  while (str != NULL) {
+    int m = 0;
+    if(strstr(keyword,"bookDevice")!=NULL){
+      if(counter == 5){
+        m = match(str,ptnDevice);
+        if(m){
+          printf("%s\n",str);
+        }
+      }
+      if(counter==6){
+        m = match(str,ptnDevice);
+        if(m){
+          printf("%s\n",str);
+        }
+      }
+    } else {
+      if(counter==6){
+        m = match(str,ptnDevice);
+        if (strstr(str,"room_A")!=NULL || strstr(str,"room_B")!=NULL || strstr(str,"room_C")!=NULL){
+          printf("%s\n","*");
+          break;
+        }
+        if(m){
+          printf("%s\n",str);
+        }
+      }
+      if(counter==7){
+        if(accept_or_reject == 1){
+          printf("%63s\n",str);
+        } else if (accept_or_reject == 0){
+          printf("%54s\n",str);
+        }
+      }
+    }
+    counter++;
+    str = strtok (NULL, " ");
+  }
+}
+
+void print_accepted_fcfs(){
+  FILE *FCFSBookingAccepted;
+  int a = 0; int b = 0; int c = 0; int d = 0; int e = 0;
+  FCFSBookingAccepted = fopen("FCFSBookingAccepted.log", "r");
+  //Get the number of record of each tenant
+  while (fscanf(FCFSBookingAccepted, "%[^\n]\n", input_from_file) != EOF){
+    countTenantRecord(input_from_file);
+  }
+  char tenant_A_record[tenant_A_count][255];
+  char tenant_B_record[tenant_B_count][255];
+  char tenant_C_record[tenant_C_count][255];
+  char tenant_D_record[tenant_D_count][255];
+  char tenant_E_record[tenant_E_count][255];
+  fclose(FCFSBookingAccepted);
+  FCFSBookingAccepted = fopen("FCFSBookingAccepted.log", "r");
+  //Add the record to corresponding array
+  while (fscanf(FCFSBookingAccepted, "%[^\n]\n", input_from_file) != EOF){
+    char original_input[255];
+    int n;
+    strncpy(original_input, input_from_file, strlen(input_from_file));
+    original_input[strlen(input_from_file)] = '\0';
+    n = tenantRecordArrange(input_from_file);
+    if(n == 1){
+      strcpy(tenant_A_record[a], original_input);
+      a += 1;
+    } else if(n == 2){
+      strcpy(tenant_B_record[b], original_input);
+      b += 1;
+    } else if(n == 3){
+      strcpy(tenant_C_record[c], original_input);
+      c += 1;
+    } else if(n == 4){
+      strcpy(tenant_D_record[d], original_input);
+      d += 1;
+    } else if(n == 5){
+      strcpy(tenant_E_record[e], original_input);
+      e += 1;
+    }
+  }
+  
+  printf("*** Room Booking – ACCEPTED / FCFS ***\n");
+  printf("\n");
+  for(j=0;j<tenant_A_count;j++){
+    if(tenant_A_count == 0){
+      break;
+    }
+    if(j==0){
+      printf("Tenant_A has the following bookings:\n");
+      printf("\n");
+      printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      for(x=0;x<74;x++){
+        printf("=");
+      }
+      printf("\n");
+    }
+    printAppointmentSchedule(tenant_A_record[j],1);
+  }
+
+  for(j=0;j<tenant_B_count;j++){
+    if(tenant_B_count == 0){
+      break;
+    }
+    if(j==0){
+      printf("\n");
+      printf("Tenant_B has the following bookings:\n");
+      printf("\n");
+      printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      for(x=0;x<74;x++){
+        printf("=");
+      }
+      printf("\n");
+    }
+    printAppointmentSchedule(tenant_B_record[j],1);
+  }
+
+  for(j=0;j<tenant_C_count;j++){
+    if(tenant_C_count == 0){
+      break;
+    }
+    if(j==0){
+      printf("\n");
+      printf("Tenant_C has the following bookings:\n");
+      printf("\n");
+      printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      for(x=0;x<74;x++){
+        printf("=");
+      }
+      printf("\n");
+    }
+    printAppointmentSchedule(tenant_C_record[j],1);
+  }
+  
+  for(j=0;j<tenant_D_count;j++){
+    if(tenant_D_count == 0){
+      break;
+    }
+    if(j==0){
+      printf("\n");
+      printf("Tenant_D has the following bookings:\n");
+      printf("\n");
+      printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      for(x=0;x<74;x++){
+        printf("=");
+      }
+      printf("\n");
+    }
+    printAppointmentSchedule(tenant_D_record[j],1);
+  }
+  
+  for(j=0;j<tenant_E_count;j++){
+    if(tenant_E_count == 0){
+      break;
+    }
+    if(j==0){
+      printf("\n");
+      printf("Tenant_E has the following bookings:\n");
+      printf("\n");
+      printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      for(x=0;x<74;x++){
+        printf("=");
+      }
+      printf("\n");
+    }
+    printAppointmentSchedule(tenant_E_record[j],1);
+  }
+  printf("%-10s\n","- End -");
+  for(x=0;x<74;x++){
+    printf("=");
+  }
+  printf("\n");
+  tenant_A_count = 0;
+  tenant_B_count = 0;
+  tenant_C_count = 0;
+  tenant_D_count = 0;
+  tenant_E_count = 0;
+  fclose(FCFSBookingAccepted);
+}
+
+void print_rejected_fcfs(){
+  FILE *FCFSBookingRejected;
+  int a = 0; int b = 0; int c = 0; int d = 0; int e = 0;
+  FCFSBookingRejected = fopen("FCFSBookingRejected.log", "r");
+  //Get the number of record of each tenant
+  while (fscanf(FCFSBookingRejected, "%[^\n]\n", input_from_file) != EOF){
+    countTenantRecord(input_from_file);
+  }
+  char tenant_A_record[tenant_A_count][255];
+  char tenant_B_record[tenant_B_count][255];
+  char tenant_C_record[tenant_C_count][255];
+  char tenant_D_record[tenant_D_count][255];
+  char tenant_E_record[tenant_E_count][255];
+  fclose(FCFSBookingRejected);
+  FCFSBookingRejected = fopen("FCFSBookingRejected.log", "r");
+  //Add the record to corresponding array
+  while (fscanf(FCFSBookingRejected, "%[^\n]\n", input_from_file) != EOF){
+    char original_input[255];
+    int n;
+    strncpy(original_input, input_from_file, strlen(input_from_file));
+    original_input[strlen(input_from_file)] = '\0';
+    n = tenantRecordArrange(input_from_file);
+    if(n == 1){
+      strcpy(tenant_A_record[a], original_input);
+      a += 1;
+    } else if(n == 2){
+      strcpy(tenant_B_record[b], original_input);
+      b += 1;
+    } else if(n == 3){
+      strcpy(tenant_C_record[c], original_input);
+      c += 1;
+    } else if(n == 4){
+      strcpy(tenant_D_record[d], original_input);
+      d += 1;
+    } else if(n == 5){
+      strcpy(tenant_E_record[e], original_input);
+      e += 1;
+    }
+  }
+  printf("*** Room Booking – REJECTED / FCFS ***\n");
+  printf("\n");
+  for(i=0;i<tenant_A_count;i++){
+    if(i==0){
+      printf("Tenant_A (there are %d bookings rejected)\n",tenant_A_count);
+      printf("\n");
+      printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      for(j=0;j<74;j++){
+        printf("=");
+      }
+      printf("\n");
+    }
+    printAppointmentSchedule(tenant_A_record[i],0);
+  }
+  for(i=0;i<tenant_B_count;i++){
+    if(i==0){
+      printf("Tenant_B (there are %d bookings rejected)\n",tenant_B_count);
+      printf("\n");
+      printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      for(j=0;j<74;j++){
+        printf("=");
+      }
+      printf("\n");
+    }
+    printAppointmentSchedule(tenant_B_record[i],0);
+  }
+  for(i=0;i<tenant_C_count;i++){
+    if(i==0){
+      printf("Tenant_C (there are %d bookings rejected)\n",tenant_C_count);
+      printf("\n");
+      printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      for(j=0;j<74;j++){
+        printf("=");
+      }
+      printf("\n");
+    }
+    printAppointmentSchedule(tenant_C_record[i],0);
+  }
+  for(i=0;i<tenant_D_count;i++){
+    if(i==0){
+      printf("Tenant_D (there are %d bookings rejected)\n",tenant_D_count);
+      printf("\n");
+      printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      for(j=0;j<74;j++){
+        printf("=");
+      }
+      printf("\n");
+    }
+    printAppointmentSchedule(tenant_D_record[i],0);
+  }
+  for(i=0;i<tenant_E_count;i++){
+    if(i==0){
+      printf("Tenant_E (there are %d bookings rejected)\n",tenant_E_count);
+      printf("\n");
+      printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      for(j=0;j<74;j++){
+        printf("=");
+      }
+      printf("\n");
+    }
+    printAppointmentSchedule(tenant_E_record[i],0);
+  }
+  printf("%-10s\n","- End -");
+  for(x=0;x<74;x++){
+    printf("=");
+  }
+  printf("\n");
+  tenant_A_count = 0;
+  tenant_B_count = 0;
+  tenant_C_count = 0;
+  tenant_D_count = 0;
+  tenant_E_count = 0;
+  fclose(FCFSBookingRejected);
 }
 
 //FCFS
@@ -595,6 +1026,10 @@ void start_fcfs(){
   fclose(outallBooking);
   fclose(FCFSBookingAccepted);
   fclose(FCFSBookingRejected);
+  print_accepted_fcfs();
+  print_rejected_fcfs();
+  remove("FCFSBookingAccepted.log");
+  remove("FCFSBookingRejected.log");
 }
 //<===============================function==============================>
 int main(void) {
@@ -602,9 +1037,8 @@ int main(void) {
   char buf2[80]={0}; //Parent read
 
   //remove("allBooking.log");
-  //remove("FCFSBookingAccepted.log");
-  //remove("FCFSBookingRejected.log");
-
+  remove("FCFSBookingAccepted.log");
+  remove("FCFSBookingRejected.log");
   //Create new pipe
   for (i = 0;i < 6; i++){
     if (pipe(pipes[i]) < 0){
@@ -741,7 +1175,6 @@ int main(void) {
       } else {
         printf("Error, Please try again!\n");
       }
-      //extract_cmd(input);
     }
     return 0;
   }
