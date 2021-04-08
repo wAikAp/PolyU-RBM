@@ -28,6 +28,7 @@ char* ptnDate = "[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])";
 char* ptnTime = "(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9])";
 char* ptnHour = "([0-9]*[.])[0-9]+";
 char* ptnPersonNumber = "[0-9]+";
+char* ptnRoom = "[room]{4}";
 char* ptnDevice = "(.*)_(.*)";
 
 //pipes and child
@@ -35,7 +36,7 @@ int child[3];
 int pipes[6][2];
 
 //loop variable
-int i,j,x;
+int i,j,x,k;
 
 //boolean variable
 bool accepted = true;
@@ -554,8 +555,8 @@ void batchFileHandler(char *filename){
   FILE *infilep, *outfilep;
   char line[100];
   char file[100];
-  strncpy(file, filename, strlen(filename)-1);
-  file[strlen(filename)-1] = '\0';
+  strncpy(file, filename, strlen(filename)-2);
+  file[strlen(filename)-2] = '\0';
   infilep = fopen(file, "r");
   outfilep = fopen("allBooking.log", "a");
   if (infilep == NULL) {
@@ -565,6 +566,7 @@ void batchFileHandler(char *filename){
   while (fgets( line, 100, infilep ) != NULL ) {
     fprintf(outfilep, "%s", line); //Write to allBooking.log
   }
+  fprintf(outfilep, "%s", "\n");
   fclose(infilep);
   fclose(outfilep);
 }
@@ -690,31 +692,23 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
   str = strtok (column_6," ");
   while (str != NULL) {
     int m = 0;
-    if(strstr(keyword,"bookDevice")!=NULL){
-      if(counter == 5){
-        m = match(str,ptnDevice);
-        if(m){
-          printf("%s\n",str);
-        }
+    m = match(str,ptnTenant);
+    if(m){
+      m = 0;
+      goto NEXT;
+    }
+
+    if(counter==6){
+      m = match(str,ptnRoom);
+      if(m){
+        printf("*\n");
+      } else {
+        printf("%s\n",str);
       }
-      if(counter==6){
-        m = match(str,ptnDevice);
-        if(m){
-          printf("%s\n",str);
-        }
-      }
-    } else {
-      if(counter==6){
-        m = match(str,ptnDevice);
-        if (strstr(str,"room_A")!=NULL || strstr(str,"room_B")!=NULL || strstr(str,"room_C")!=NULL){
-          printf("%s\n","*");
-          break;
-        }
-        if(m){
-          printf("%s\n",str);
-        }
-      }
-      if(counter==7){
+    }
+    if(counter==7){
+      m = match(str,ptnDevice);
+      if(m){
         if(accept_or_reject == 1){
           printf("%63s\n",str);
         } else if (accept_or_reject == 0){
@@ -722,13 +716,16 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
         }
       }
     }
-    counter++;
+    NEXT:counter++;
     str = strtok (NULL, " ");
   }
 }
 
 void print_accepted_fcfs(){
   FILE *FCFSBookingAccepted;
+  tenant_A_count = 0; tenant_B_count = 0; tenant_C_count = 0; 
+  tenant_D_count = 0; tenant_E_count = 0;
+
   int a = 0; int b = 0; int c = 0; int d = 0; int e = 0;
   FCFSBookingAccepted = fopen("FCFSBookingAccepted.log", "r");
   //Get the number of record of each tenant
@@ -868,6 +865,8 @@ void print_accepted_fcfs(){
 void print_rejected_fcfs(){
   FILE *FCFSBookingRejected;
   int a = 0; int b = 0; int c = 0; int d = 0; int e = 0;
+  tenant_A_count = 0; tenant_B_count = 0; tenant_C_count = 0; 
+  tenant_D_count = 0; tenant_E_count = 0;
   FCFSBookingRejected = fopen("FCFSBookingRejected.log", "r");
   //Get the number of record of each tenant
   while (fscanf(FCFSBookingRejected, "%[^\n]\n", input_from_file) != EOF){
@@ -907,7 +906,11 @@ void print_rejected_fcfs(){
   printf("*** Room Booking – REJECTED / FCFS ***\n");
   printf("\n");
   for(i=0;i<tenant_A_count;i++){
+    if(tenant_A_count == 0){
+      break;
+    }
     if(i==0){
+      printf("\n");
       printf("Tenant_A (there are %d bookings rejected)\n",tenant_A_count);
       printf("\n");
       printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
@@ -919,7 +922,11 @@ void print_rejected_fcfs(){
     printAppointmentSchedule(tenant_A_record[i],0);
   }
   for(i=0;i<tenant_B_count;i++){
+    if(tenant_B_count == 0){
+      break;
+    }
     if(i==0){
+      printf("\n");
       printf("Tenant_B (there are %d bookings rejected)\n",tenant_B_count);
       printf("\n");
       printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
@@ -931,7 +938,11 @@ void print_rejected_fcfs(){
     printAppointmentSchedule(tenant_B_record[i],0);
   }
   for(i=0;i<tenant_C_count;i++){
+    if(tenant_C_count == 0){
+      break;
+    }
     if(i==0){
+      printf("\n");
       printf("Tenant_C (there are %d bookings rejected)\n",tenant_C_count);
       printf("\n");
       printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
@@ -943,7 +954,11 @@ void print_rejected_fcfs(){
     printAppointmentSchedule(tenant_C_record[i],0);
   }
   for(i=0;i<tenant_D_count;i++){
+    if(tenant_D_count == 0){
+      break;
+    }
     if(i==0){
+      printf("\n");
       printf("Tenant_D (there are %d bookings rejected)\n",tenant_D_count);
       printf("\n");
       printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
@@ -955,7 +970,11 @@ void print_rejected_fcfs(){
     printAppointmentSchedule(tenant_D_record[i],0);
   }
   for(i=0;i<tenant_E_count;i++){
+    if(tenant_E_count == 0){
+      break;
+    }
     if(i==0){
+      printf("\n");
       printf("Tenant_E (there are %d bookings rejected)\n",tenant_E_count);
       printf("\n");
       printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
@@ -986,7 +1005,7 @@ void start_fcfs(){
   FCFSBookingAccepted = fopen("FCFSBookingAccepted.log", "a");
   FCFSBookingRejected = fopen("FCFSBookingRejected.log", "a");
   while (fscanf(outallBooking, "%[^\n]\n", input_from_file) != EOF){
-    char original_input[100];
+    char original_input[255];
     strncpy(original_input, input_from_file, strlen(input_from_file)-1);
     original_input[strlen(input_from_file)-1] = '\0';
     if(extract_cmd(input_from_file)){
@@ -1000,10 +1019,10 @@ void start_fcfs(){
       fprintf(FCFSBookingAccepted, "%s\n", original_input);
       room = 0;
     } else {
-       fprintf(FCFSBookingRejected, "%s\n", original_input);
+      fprintf(FCFSBookingRejected, "%s\n", original_input);
     }
   }
-
+  
   //Reset Room variables
   memset(Room_A, 0, 168);
   memset(Room_B, 0, 168);
@@ -1022,7 +1041,6 @@ void start_fcfs(){
   memset(screen_100_1, 0, 168);
   memset(screen_100_2, 0, 168);
   memset(screen_150, 0, 168);
-
   fclose(outallBooking);
   fclose(FCFSBookingAccepted);
   fclose(FCFSBookingRejected);
@@ -1048,18 +1066,18 @@ int main(void) {
   }
 
   //Create Child
-  for(i = 0;i < 3; i++){
-    child[i] = fork();
-    if (child[i]<0) {
+  for(k = 0;k < 3; k++){
+    child[k] = fork();
+    if (child[k]<0) {
     printf("Fork Failed\n");
     exit(1);
-    } else if (child[i]==0) {
+    } else if (child[k]==0) {
       //Close unused pipes in Child
       for (j = 0; j < 6; j++){
-        if(j != i*2){
+        if(j != k*2){
           close(pipes[j][0]);
         }
-        if(j != (i*2+1)){
+        if(j != (k*2+1)){
           close(pipes[j][1]);
         }
       }
@@ -1067,21 +1085,21 @@ int main(void) {
     }
   }  
 
-  if(i!=3){ //Child Process
+  if(k!=3){ //Child Process
     while(1){
       memset(buf,0,sizeof(buf));
       int n;
-      n = read(pipes[2*i][0],buf,4);
+      n = read(pipes[2*k][0],buf,4);
       buf[n]=0;
       if(strcmp(buf,"fcfs")==0){ //Child 0 => FCFS
         start_fcfs();
-        //printf("I am Child %d: %s\n",i,buf);
+        //printf("I am Child %d: %s\n",k,buf);
         strcpy(buf2, "Done");
         write(pipes[1][1],buf2,4);
       } else if (strcmp(buf,"prio")==0){ //Child 1 => PRIO
         //printf("I am Child %d: %s\n",i,buf);
         strcpy(buf2, "Done");
-        write(pipes[3][1],buf2,4);
+        write(pipes[3][1],buf2,4 );
       } else if (strcmp(buf,"opti")==0){ //Child 2 => OPTI
         //printf("I am Child %d: %s\n",i,buf);
         strcpy(buf2, "Done");
@@ -1131,6 +1149,7 @@ int main(void) {
         //break;
       } else if (strstr(input, "addBatch")!=NULL){
         batchFileHandler(batchFileName(input));
+        printf("-> [Pending]\n");
       } else if (strstr(input, "printBookings")!=NULL){
         schedulingChecking(input);
         if(strcmp(fcfs,"fcfs")==0){
