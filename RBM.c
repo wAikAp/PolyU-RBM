@@ -176,7 +176,7 @@ bool deviceHandler(char* device, int start, int hour){
   } else if (strstr(device,"webcam_UHD")!=NULL){
     for(i=start;i<start+hour;i++){ 
       if(webcam_UHD[i] == 1){
-        Free_webcam_FHD_1 = false;
+        Free_webcam_UHD = false;
       }
     }
   } else if (strstr(device,"monitor_50")!=NULL){
@@ -435,7 +435,7 @@ bool extract_cmd(char *input){
       return(false);
     }
   }
-  
+
   if(device_1[0] != '\0'){
     if(!deviceHandler(device_1,start,hour)){
       return(false);
@@ -626,6 +626,7 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
   //Print Date, Start, End
   int start_time = 0; int hour = 0; char end_time[5]; char column_1_to_3[100]; char keyword[20];
   char column_4_to_5[100]; char column_6[100];
+  int check_exist_devices = 0; bool exist_devices = true;
   strncpy(column_1_to_3, input, strlen(input));
   column_1_to_3[strlen(input)] = '\0';
   //printf("column_1_to_3:%s\n",column_1_to_3);
@@ -653,6 +654,15 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
       printf("%-8s",end_time);
       m = 0;
     }
+    if(accept_or_reject == 0){
+      if(check_exist_devices==5){
+        str = strtok (NULL, " ");
+        if(str == NULL){
+          exist_devices = false;
+        }
+      }
+    }
+    check_exist_devices++;
     str = strtok (NULL, " ");
   }
   //Print Type, Room
@@ -672,7 +682,8 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
         printf("%-15s","Conference");
       } else if (strstr(str,"bookDevice")!=NULL){
         strcpy(keyword,"bookDevice");
-        printf("%-15s%-9s","*","*");
+        if(accept_or_reject == 1){printf("%-15s%-9s","*","*");}
+        else {printf("%-15s","*");}
       }
     }
     if (strstr(str,"room_A")!=NULL){
@@ -697,25 +708,57 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
       m = 0;
       goto NEXT;
     }
-
-    if(counter==6){
-      m = match(str,ptnRoom);
-      if(m){
-        printf("*\n");
-      } else {
-        printf("%s\n",str);
+    if(strstr(keyword,"bookDevice")!=NULL){ //Print device in book device
+      if(counter==5){
+         m = match(str,ptnDevice);
+         if(m){
+           printf("%s\n",str);
+           m = 0;
+         }
       }
-    }
-    if(counter==7){
-      m = match(str,ptnDevice);
-      if(m){
-        if(accept_or_reject == 1){
-          printf("%63s\n",str);
-        } else if (accept_or_reject == 0){
-          printf("%54s\n",str);
+      if(counter==6){
+         m = match(str,ptnDevice);
+         if(m){
+          if(accept_or_reject == 0){
+            printf("%56s\n",str);
+          } else {
+            printf("%65s\n",str);
+          }
+           m = 0;
+         }
+      }
+    } else {
+      if(accept_or_reject == 0){
+        if (counter == 5){
+          if(!exist_devices){
+            printf("*\n");
+          }
+        }
+      }
+      if(counter==6){ //Print device in room booking
+        m = match(str,ptnRoom);
+        if(m){
+          printf("*\n");
+          m = 0;
+        } else {
+          printf("%s\n",str);
+          m = 0;
+        }
+      }
+      if(counter==7){
+        m = match(str,ptnDevice);
+        if(m){
+          if(accept_or_reject == 1){
+            printf("%63s\n",str);
+            m = 0;
+          } else if (accept_or_reject == 0){
+            printf("%54s\n",str);
+            m = 0;
+          }
         }
       }
     }
+
     NEXT:counter++;
     str = strtok (NULL, " ");
   }
@@ -1008,6 +1051,7 @@ void start_fcfs(){
     char original_input[255];
     strncpy(original_input, input_from_file, strlen(input_from_file)-1);
     original_input[strlen(input_from_file)-1] = '\0';
+    room = 0;
     if(extract_cmd(input_from_file)){
       if (room == 1){
         strcat(original_input, " room_A");
@@ -1017,30 +1061,29 @@ void start_fcfs(){
         strcat(original_input, " room_C");
       }
       fprintf(FCFSBookingAccepted, "%s\n", original_input);
-      room = 0;
     } else {
       fprintf(FCFSBookingRejected, "%s\n", original_input);
     }
   }
   
   //Reset Room variables
-  memset(Room_A, 0, 168);
-  memset(Room_B, 0, 168);
-  memset(Room_C, 0, 168);
+  memset(Room_A, 0, sizeof(Room_A));
+  memset(Room_B, 0, sizeof(Room_B));
+  memset(Room_C, 0, sizeof(Room_C));
 
   //Reset Device variables
-  memset(webcam_FHD_1, 0, 168);
-  memset(webcam_FHD_2, 0, 168);
-  memset(webcam_UHD, 0, 168);
-  memset(monitor_50_1, 0, 168);
-  memset(monitor_50_2, 0, 168);
-  memset(monitor_75, 0, 168);
-  memset(projector_2K_1, 0, 168);
-  memset(projector_2K_2, 0, 168);
-  memset(projector_4K, 0, 168);
-  memset(screen_100_1, 0, 168);
-  memset(screen_100_2, 0, 168);
-  memset(screen_150, 0, 168);
+  memset(webcam_FHD_1, 0, sizeof(webcam_FHD_1));
+  memset(webcam_FHD_2, 0, sizeof(webcam_FHD_2));
+  memset(webcam_UHD, 0, sizeof(webcam_UHD));
+  memset(monitor_50_1, 0, sizeof(monitor_50_1));
+  memset(monitor_50_2, 0, sizeof(monitor_50_2));
+  memset(monitor_75, 0, sizeof(monitor_75));
+  memset(projector_2K_1, 0, sizeof(projector_2K_1));
+  memset(projector_2K_2, 0, sizeof(projector_2K_2));
+  memset(projector_4K, 0, sizeof(projector_4K));
+  memset(screen_100_1, 0, sizeof(screen_100_1));
+  memset(screen_100_2, 0, sizeof(screen_100_2));
+  memset(screen_150, 0, sizeof(screen_150));
   fclose(outallBooking);
   fclose(FCFSBookingAccepted);
   fclose(FCFSBookingRejected);
@@ -1140,8 +1183,8 @@ int main(void) {
         //write(pipes[0][1],"end",3);
         wait(NULL);
         //remove("allBooking.log");
-        //remove("FCFSBookingAccepted.log");
-        //remove("FCFSBookingRejected.log");
+        remove("FCFSBookingAccepted.log");
+        remove("FCFSBookingRejected.log");
         //remove("PRIOBooking.log");
         //remove("OPTIBooking.log");
         printf("-> Bye!\n");
