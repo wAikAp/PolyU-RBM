@@ -38,9 +38,6 @@ int pipes[6][2];
 //loop variable
 int i,j,x,k;
 
-//boolean variable
-bool accepted = true;
-
 //Scheduling variables 
 char fcfs[10];
 char prio[10];
@@ -72,6 +69,14 @@ int tenant_B_count = 0;
 int tenant_C_count = 0;
 int tenant_D_count = 0;
 int tenant_E_count = 0;
+
+//Count the cmd for corresponding keyword
+int conference_count = 0; 
+int presentation_count = 0; 
+int meeting_count = 0; 
+int device_count = 0;
+int conf_temp = 0; int pres_temp = 0; int meet_temp = 0; int devi_temp = 0;
+
 
 //<===============================Variables=============================>
 //<===============================function==============================>
@@ -720,9 +725,9 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
          m = match(str,ptnDevice);
          if(m){
           if(accept_or_reject == 0){
-            printf("%56s\n",str);
+            printf("%54s\n",str);
           } else {
-            printf("%65s\n",str);
+            printf("%63s\n",str);
           }
            m = 0;
          }
@@ -764,15 +769,39 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
   }
 }
 
-void print_accepted_fcfs(){
-  FILE *FCFSBookingAccepted;
+//Check keyword
+void count_cmd_for_keyword(char *input){
+  int counter = 0;
+  str = strtok (input," ");
+  while (str != NULL) {
+    if(counter == 1){break;}
+    int m = 0;
+    m = match(str,ptnKeyWord);
+    if(m){
+      if (strstr(str, "addConference") != NULL){conference_count++;}
+      else if (strstr(str, "addPresentation") != NULL){presentation_count++;}
+      else if (strstr(str, "addMeeting") != NULL){meeting_count++;}
+      else if (strstr(str, "bookDevice") != NULL){device_count++;}
+    }
+    counter++;
+  }
+
+}
+
+//Print accepted report
+void print_accepted(int algorithm){
+  FILE *Accepted;
   tenant_A_count = 0; tenant_B_count = 0; tenant_C_count = 0; 
   tenant_D_count = 0; tenant_E_count = 0;
 
   int a = 0; int b = 0; int c = 0; int d = 0; int e = 0;
-  FCFSBookingAccepted = fopen("FCFSBookingAccepted.log", "r");
+  if(algorithm == 1){
+    Accepted = fopen("FCFSBookingAccepted.log", "r");
+  } else if (algorithm == 2){
+    Accepted = fopen("PRIOBookingAccepted.log", "r");
+  }
   //Get the number of record of each tenant
-  while (fscanf(FCFSBookingAccepted, "%[^\n]\n", input_from_file) != EOF){
+  while (fscanf(Accepted, "%[^\n]\n", input_from_file) != EOF){
     countTenantRecord(input_from_file);
   }
   char tenant_A_record[tenant_A_count][255];
@@ -780,10 +809,14 @@ void print_accepted_fcfs(){
   char tenant_C_record[tenant_C_count][255];
   char tenant_D_record[tenant_D_count][255];
   char tenant_E_record[tenant_E_count][255];
-  fclose(FCFSBookingAccepted);
-  FCFSBookingAccepted = fopen("FCFSBookingAccepted.log", "r");
+  fclose(Accepted);
+  if(algorithm == 1){
+    Accepted = fopen("FCFSBookingAccepted.log", "r");
+  } else if (algorithm == 2){
+    Accepted = fopen("PRIOBookingAccepted.log", "r");
+  }
   //Add the record to corresponding array
-  while (fscanf(FCFSBookingAccepted, "%[^\n]\n", input_from_file) != EOF){
+  while (fscanf(Accepted, "%[^\n]\n", input_from_file) != EOF){
     char original_input[255];
     int n;
     strncpy(original_input, input_from_file, strlen(input_from_file));
@@ -806,9 +839,12 @@ void print_accepted_fcfs(){
       e += 1;
     }
   }
-  
-  printf("*** Room Booking – ACCEPTED / FCFS ***\n");
-  printf("\n");
+  if(algorithm == 1){
+    printf("*** Room Booking – ACCEPTED / FCFS ***\n");
+  } else if (algorithm == 2){
+    printf("*** Room Booking – ACCEPTED / PRIO ***\n");
+  }
+
   for(j=0;j<tenant_A_count;j++){
     if(tenant_A_count == 0){
       break;
@@ -902,17 +938,22 @@ void print_accepted_fcfs(){
   tenant_C_count = 0;
   tenant_D_count = 0;
   tenant_E_count = 0;
-  fclose(FCFSBookingAccepted);
+  fclose(Accepted);
 }
 
-void print_rejected_fcfs(){
-  FILE *FCFSBookingRejected;
+//Print rejected report
+void print_rejected(int algorithm){
+  FILE *Rejected;
   int a = 0; int b = 0; int c = 0; int d = 0; int e = 0;
   tenant_A_count = 0; tenant_B_count = 0; tenant_C_count = 0; 
   tenant_D_count = 0; tenant_E_count = 0;
-  FCFSBookingRejected = fopen("FCFSBookingRejected.log", "r");
+  if (algorithm == 1){
+    Rejected = fopen("FCFSBookingRejected.log", "r");
+  } else if (algorithm == 2){
+    Rejected = fopen("PRIOBookingRejected.log", "r");
+  }
   //Get the number of record of each tenant
-  while (fscanf(FCFSBookingRejected, "%[^\n]\n", input_from_file) != EOF){
+  while (fscanf(Rejected, "%[^\n]\n", input_from_file) != EOF){
     countTenantRecord(input_from_file);
   }
   char tenant_A_record[tenant_A_count][255];
@@ -920,10 +961,14 @@ void print_rejected_fcfs(){
   char tenant_C_record[tenant_C_count][255];
   char tenant_D_record[tenant_D_count][255];
   char tenant_E_record[tenant_E_count][255];
-  fclose(FCFSBookingRejected);
-  FCFSBookingRejected = fopen("FCFSBookingRejected.log", "r");
+  fclose(Rejected);
+  if (algorithm == 1){
+    Rejected = fopen("FCFSBookingRejected.log", "r");
+  } else if (algorithm == 2){
+    Rejected = fopen("PRIOBookingRejected.log", "r");
+  }
   //Add the record to corresponding array
-  while (fscanf(FCFSBookingRejected, "%[^\n]\n", input_from_file) != EOF){
+  while (fscanf(Rejected, "%[^\n]\n", input_from_file) != EOF){
     char original_input[255];
     int n;
     strncpy(original_input, input_from_file, strlen(input_from_file));
@@ -946,8 +991,12 @@ void print_rejected_fcfs(){
       e += 1;
     }
   }
-  printf("*** Room Booking – REJECTED / FCFS ***\n");
-  printf("\n");
+  if (algorithm == 1){
+    printf("*** Room Booking – REJECTED / FCFS ***\n");
+  } else if (algorithm == 2){
+    printf("*** Room Booking – ACCEPTED / PRIO ***\n");
+  }
+  
   for(i=0;i<tenant_A_count;i++){
     if(tenant_A_count == 0){
       break;
@@ -1038,15 +1087,67 @@ void print_rejected_fcfs(){
   tenant_C_count = 0;
   tenant_D_count = 0;
   tenant_E_count = 0;
-  fclose(FCFSBookingRejected);
+  fclose(Rejected);
 }
 
-//FCFS
-void start_fcfs(){
-  FILE *outallBooking, *FCFSBookingAccepted, *FCFSBookingRejected;
-  outallBooking = fopen("allBooking.log", "r");
-  FCFSBookingAccepted = fopen("FCFSBookingAccepted.log", "a");
-  FCFSBookingRejected = fopen("FCFSBookingRejected.log", "a");
+//run algorithm, 1 = FCFS, 2 = PRIO, 3 = OPTI
+void start_printBookings(int algorithm){
+  FILE *outallBooking, *Accepted, *Rejected;
+  if(algorithm == 1){
+    outallBooking = fopen("allBooking.log", "r");
+    Accepted = fopen("FCFSBookingAccepted.log", "a");
+    Rejected = fopen("FCFSBookingRejected.log", "a");
+  } else if (algorithm == 2){
+    FILE *PRIOSortedBooking;
+    Accepted = fopen("PRIOBookingAccepted.log", "a");
+    Rejected = fopen("PRIOBookingRejected.log", "a");
+    PRIOSortedBooking = fopen ("PRIOSortedBooking.log", "a");
+    outallBooking = fopen("allBooking.log", "r");
+    while (fscanf(outallBooking, "%[^\n]\n", input_from_file) != EOF){
+      count_cmd_for_keyword(input_from_file);
+    }
+    char conference[conference_count][255]; char presentation[presentation_count][255]; 
+    char meeting[meeting_count][255]; char device[device_count][255];
+    fclose(outallBooking);
+    outallBooking = fopen("allBooking.log", "r");
+    while (fscanf(outallBooking, "%[^\n]\n", input_from_file) != EOF){
+      char temp_input[255];
+      strncpy(temp_input, input_from_file, strlen(input_from_file));
+      temp_input[strlen(input_from_file)] = '\0';
+      int counter = 0;
+      str = strtok (input_from_file," ");
+      while (str != NULL) {
+        int m = 0;
+        m = match(str,ptnKeyWord);
+        if(m){
+          if (strstr(str, "addConference") != NULL){
+            strcpy(conference[conf_temp],temp_input);
+            conf_temp++;
+          } else if (strstr(str, "addPresentation") != NULL){
+            strcpy(presentation[pres_temp],temp_input);
+            pres_temp++;
+          } else if (strstr(str, "addMeeting") != NULL){
+            strcpy(meeting[meet_temp],temp_input);
+            meet_temp++;
+          } else if (strstr(str, "bookDevice") != NULL){
+            strcpy(device[devi_temp],temp_input);
+            devi_temp++;
+          }
+        }
+        str = strtok (NULL, " ");
+      }
+    }
+    fclose(outallBooking);
+    for(i=0;i<conference_count;i++){fprintf(PRIOSortedBooking, "%s\n", conference[i]);}
+    for(i=0;i<presentation_count;i++){fprintf(PRIOSortedBooking, "%s\n", presentation[i]);}
+    for(i=0;i<meeting_count;i++){fprintf(PRIOSortedBooking, "%s\n", meeting[i]);}
+    for(i=0;i<device_count;i++){fprintf(PRIOSortedBooking, "%s\n", device[i]);}
+    conference_count = 0; presentation_count=0; meeting_count=0; device_count=0;
+    conf_temp = 0; pres_temp = 0; meet_temp = 0; devi_temp = 0;
+    fclose(PRIOSortedBooking);
+    outallBooking = fopen("PRIOSortedBooking.log", "r");
+  }
+
   while (fscanf(outallBooking, "%[^\n]\n", input_from_file) != EOF){
     char original_input[255];
     strncpy(original_input, input_from_file, strlen(input_from_file)-1);
@@ -1060,9 +1161,9 @@ void start_fcfs(){
       } else if (room == 3){
         strcat(original_input, " room_C");
       }
-      fprintf(FCFSBookingAccepted, "%s\n", original_input);
+      fprintf(Accepted, "%s\n", original_input);
     } else {
-      fprintf(FCFSBookingRejected, "%s\n", original_input);
+      fprintf(Rejected, "%s\n", original_input);
     }
   }
   
@@ -1085,12 +1186,18 @@ void start_fcfs(){
   memset(screen_100_2, 0, sizeof(screen_100_2));
   memset(screen_150, 0, sizeof(screen_150));
   fclose(outallBooking);
-  fclose(FCFSBookingAccepted);
-  fclose(FCFSBookingRejected);
-  print_accepted_fcfs();
-  print_rejected_fcfs();
-  remove("FCFSBookingAccepted.log");
-  remove("FCFSBookingRejected.log");
+  fclose(Accepted);
+  fclose(Rejected);
+  print_accepted(algorithm);
+  print_rejected(algorithm);
+  if(algorithm == 1){
+    remove("FCFSBookingAccepted.log");
+    remove("FCFSBookingRejected.log");
+  } else if (algorithm == 2){
+    remove("PRIOSortedBooking.log");
+    remove("PRIOBookingAccepted.log");
+    remove("PRIOBookingRejected.log");
+  }
 }
 //<===============================function==============================>
 int main(void) {
@@ -1100,6 +1207,9 @@ int main(void) {
   //remove("allBooking.log");
   remove("FCFSBookingAccepted.log");
   remove("FCFSBookingRejected.log");
+  remove("PRIOSortedBooking.log");
+  remove("PRIOBookingAccepted.log");
+  remove("PRIOBookingRejected.log");
   //Create new pipe
   for (i = 0;i < 6; i++){
     if (pipe(pipes[i]) < 0){
@@ -1135,20 +1245,21 @@ int main(void) {
       n = read(pipes[2*k][0],buf,4);
       buf[n]=0;
       if(strcmp(buf,"fcfs")==0){ //Child 0 => FCFS
-        start_fcfs();
+        start_printBookings(1);
         //printf("I am Child %d: %s\n",k,buf);
         strcpy(buf2, "Done");
         write(pipes[1][1],buf2,4);
       } else if (strcmp(buf,"prio")==0){ //Child 1 => PRIO
-        //printf("I am Child %d: %s\n",i,buf);
+        start_printBookings(2);
+        //printf("I am Child %d: %s\n",k,buf);
         strcpy(buf2, "Done");
         write(pipes[3][1],buf2,4 );
       } else if (strcmp(buf,"opti")==0){ //Child 2 => OPTI
-        //printf("I am Child %d: %s\n",i,buf);
+        //printf("I am Child %d: %s\n",k,buf);
         strcpy(buf2, "Done");
         write(pipes[5][1],buf2,4);
       } else if (strcmp(buf,"end")==0){ //ALL Child exit
-        //printf("I am Child %d: %s\n",i,buf);
+        //printf("I am Child %d: %s\n",k,buf);
         exit(0);
       }
     }
@@ -1185,7 +1296,9 @@ int main(void) {
         //remove("allBooking.log");
         remove("FCFSBookingAccepted.log");
         remove("FCFSBookingRejected.log");
-        //remove("PRIOBooking.log");
+        remove("PRIOSortedBooking.log");
+        remove("PRIOBookingAccepted.log");
+        remove("PRIOBookingRejected.log");
         //remove("OPTIBooking.log");
         printf("-> Bye!\n");
         exit(0);
