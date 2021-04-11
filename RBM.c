@@ -32,8 +32,8 @@ char* ptnRoom = "[room]{4}";
 char* ptnDevice = "(.*)_(.*)";
 
 //pipes and child
-int child[3];
-int pipes[6][2];
+int child[4];
+int pipes[8][2];
 
 //loop variable
 int i,j,x,k;
@@ -42,6 +42,7 @@ int i,j,x,k;
 char fcfs[10];
 char prio[10];
 char opti[10];
+char all[10];
 
 //Room variables
 int Room_A[168] = {0}; 
@@ -77,6 +78,20 @@ int meeting_count = 0;
 int device_count = 0;
 int conf_temp = 0; int pres_temp = 0; int meet_temp = 0; int devi_temp = 0;
 
+//Total number of booking
+int total_booking_received = 0; 
+int fcfs_booking_assigned = 0; int fcfs_booking_rejected = 0;
+int fcfs_count_roomA = 0; int fcfs_count_roomB = 0; int fcfs_count_roomC = 0;
+int fcfs_count_webcam_FHD_1 = 0; int fcfs_count_webcam_FHD_2 = 0; int fcfs_count_webcam_UHD = 0;
+int fcfs_count_monitor_50_1 = 0; int fcfs_count_monitor_50_2 = 0; int fcfs_count_monitor_75 = 0;
+int fcfs_count_projector_2K_1 = 0; int fcfs_count_projector_2K_2 = 0; int fcfs_count_projector_4K = 0;
+int fcfs_count_screen_100_1 = 0; int fcfs_count_screen_100_2 = 0; int fcfs_count_screen_150 = 0;
+int prio_booking_assigned = 0; int prio_booking_rejected = 0;
+int prio_count_roomA = 0; int prio_count_roomB = 0; int prio_count_roomC = 0;
+int prio_count_webcam_FHD_1 = 0; int prio_count_webcam_FHD_2 = 0; int prio_count_webcam_UHD = 0;
+int prio_count_monitor_50_1 = 0; int prio_count_monitor_50_2 = 0; int prio_count_monitor_75 = 0;
+int prio_count_projector_2K_1 = 0; int prio_count_projector_2K_2 = 0; int prio_count_projector_4K = 0;
+int prio_count_screen_100_1 = 0; int prio_count_screen_100_2 = 0; int prio_count_screen_150 = 0;
 
 //<===============================Variables=============================>
 //<===============================function==============================>
@@ -472,6 +487,10 @@ void schedulingChecking(char *input){
     if (strstr(str, "opti")!=NULL){
       strcpy(opti,"opti");
     }
+    //Check all request
+    if (strstr(str, "ALL")!=NULL){
+      strcpy(all,"ALL");
+    }
     //find next string
     str = strtok (NULL, " ");
   }    
@@ -629,7 +648,7 @@ int tenantRecordArrange(char *input){
 //Reconstruct print pattern
 void printAppointmentSchedule(char *input, int accept_or_reject){
   //Print Date, Start, End
-  int start_time = 0; int hour = 0; char end_time[5]; char column_1_to_3[100]; char keyword[20];
+  int date; int end; int count=0; int start_time = 0; int hour = 0; char end_time[5]; char column_1_to_3[100]; char keyword[20];
   char column_4_to_5[100]; char column_6[100];
   int check_exist_devices = 0; bool exist_devices = true;
   strncpy(column_1_to_3, input, strlen(input));
@@ -640,6 +659,7 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
     int m = 0;
     m = match(str,ptnDate);
     if(m){
+      date = atoi(str+8);
       printf("%-13s",str);
       m = 0;
     }
@@ -654,9 +674,19 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
     m = match(str,ptnHour);
     if(m){
       hour = atoi(str);
-      sprintf(end_time,"%d",(start_time+hour));
+      end = start_time+hour;
+      while(end > 24){
+        end = end - 24;
+        count++;
+      }
+      sprintf(end_time,"%d",end);
       strcat(end_time,":00");
-      printf("%-8s",end_time);
+      /*if(start_time+hour>24){ <================print the end day if booking hour > 24
+        printf("(%d)%-8s",(date+count),end_time);
+      } else {*/
+        printf("%-8s",end_time);
+      //}
+      
       m = 0;
     }
     if(accept_or_reject == 0){
@@ -994,7 +1024,7 @@ void print_rejected(int algorithm){
   if (algorithm == 1){
     printf("*** Room Booking – REJECTED / FCFS ***\n");
   } else if (algorithm == 2){
-    printf("*** Room Booking – ACCEPTED / PRIO ***\n");
+    printf("*** Room Booking – REJECTED / PRIO ***\n");
   }
   
   for(i=0;i<tenant_A_count;i++){
@@ -1090,9 +1120,91 @@ void print_rejected(int algorithm){
   fclose(Rejected);
 }
 
+//Count hours of room and device
+void count_hours(int algorithm){
+  for(i=0;i<168;i++){
+    if(Room_A[i]==1 && algorithm==1){
+      fcfs_count_roomA++;
+    } else if (Room_A[i]==1 && algorithm==2){
+      prio_count_roomA++;
+    }
+    if(Room_B[i]==1 && algorithm==1){
+      fcfs_count_roomB++;
+    } else if (Room_B[i]==1 && algorithm==2){
+      prio_count_roomB++;
+    }
+    if(Room_C[i]==1 && algorithm==1){
+      fcfs_count_roomC++;
+    } else if (Room_C[i]==1 && algorithm==2){
+      prio_count_roomC++;
+    }
+    if(webcam_FHD_1[i]==1 && algorithm==1){
+      fcfs_count_webcam_FHD_1++;
+    } else if (webcam_FHD_1[i]==1 && algorithm==2){
+      prio_count_webcam_FHD_1++;
+    }
+    if(webcam_FHD_2[i]==1 && algorithm==1){
+      fcfs_count_webcam_FHD_2++;
+    } else if (webcam_FHD_2[i]==1 && algorithm==2){
+      prio_count_webcam_FHD_2++;
+    }
+    if(webcam_UHD[i]==1 && algorithm==1){
+      fcfs_count_webcam_UHD++;
+    } else if (webcam_UHD[i]==1 && algorithm==2){
+      prio_count_webcam_UHD++;
+    }
+    if(monitor_50_1[i]==1 && algorithm==1){
+      fcfs_count_monitor_50_1++;
+    } else if (monitor_50_1[i]==1 && algorithm==2){
+      prio_count_monitor_50_1++;
+    }
+    if(monitor_50_2[i]==1 && algorithm==1){
+      fcfs_count_monitor_50_2++;
+    } else if (monitor_50_2[i]==1 && algorithm==2){
+      prio_count_monitor_50_2++;
+    }
+    if(monitor_75[i]==1 && algorithm==1){
+      fcfs_count_monitor_75++;
+    } else if (monitor_75[i]==1 && algorithm==2){
+      prio_count_monitor_75++;
+    }
+    if(projector_2K_1[i]==1 && algorithm==1){
+      fcfs_count_projector_2K_1++;
+    } else if (projector_2K_1[i]==1 && algorithm==2){
+      prio_count_projector_2K_1++;
+    }
+    if(projector_2K_2[i]==1 && algorithm==1){
+      fcfs_count_projector_2K_2++;
+    } else if (projector_2K_2[i]==1 && algorithm==2){
+      prio_count_projector_2K_2++;
+    }
+    if(projector_4K[i]==1 && algorithm==1){
+      fcfs_count_projector_4K++;
+    } else if (projector_4K[i]==1 && algorithm==2){
+      prio_count_projector_4K++;
+    }
+    if(screen_100_1[i]==1 && algorithm==1){
+      fcfs_count_screen_100_1++;
+    } else if (screen_100_1[i]==1 && algorithm==2){
+      prio_count_screen_100_1++;
+    }
+    if(screen_100_2[i]==1 && algorithm==1){
+      fcfs_count_screen_100_2++;
+    } else if (screen_100_2[i]==1 && algorithm==2){
+      prio_count_screen_100_2++;
+    }
+    if(screen_150[i]==1 && algorithm==1){
+      fcfs_count_screen_150++;
+    } else if (screen_150[i]==1 && algorithm==2){
+      prio_count_screen_150++;
+    }
+  }
+}
+
 //run algorithm, 1 = FCFS, 2 = PRIO, 3 = OPTI
 void start_printBookings(int algorithm){
   FILE *outallBooking, *Accepted, *Rejected;
+  int count_booking = 0; int count_assigned = 0; int count_rejected = 0; 
   if(algorithm == 1){
     outallBooking = fopen("allBooking.log", "r");
     Accepted = fopen("FCFSBookingAccepted.log", "a");
@@ -1149,6 +1261,7 @@ void start_printBookings(int algorithm){
   }
 
   while (fscanf(outallBooking, "%[^\n]\n", input_from_file) != EOF){
+    count_booking++;
     char original_input[255];
     strncpy(original_input, input_from_file, strlen(input_from_file)-1);
     original_input[strlen(input_from_file)-1] = '\0';
@@ -1161,12 +1274,22 @@ void start_printBookings(int algorithm){
       } else if (room == 3){
         strcat(original_input, " room_C");
       }
+      count_assigned++;
       fprintf(Accepted, "%s\n", original_input);
     } else {
+      count_rejected++;
       fprintf(Rejected, "%s\n", original_input);
     }
   }
-  
+  total_booking_received = count_booking;
+  if(algorithm == 1){
+    fcfs_booking_assigned = count_assigned;
+    fcfs_booking_rejected = count_rejected;
+  } else if (algorithm == 2){
+    prio_booking_assigned = count_assigned;
+    prio_booking_rejected = count_rejected;   
+  }
+  count_hours(algorithm);
   //Reset Room variables
   memset(Room_A, 0, sizeof(Room_A));
   memset(Room_B, 0, sizeof(Room_B));
@@ -1199,6 +1322,50 @@ void start_printBookings(int algorithm){
     remove("PRIOBookingRejected.log");
   }
 }
+
+//Print summary (Utilization = 1-(used hour/all hour) * 100) <== to be confirmed
+void printSummaryReport(){
+  printf("*** Room Booking Manager – Summary Report ***\n");
+  printf("\n");
+  printf("Performance:\n");
+  printf("\n");
+  printf("%11s\n","For FCFS:");
+  printf("%44s%d\n","Total Number of Bookings Received:", total_booking_received);
+  printf("%44s%d\n","Number of Bookings Assigned:", fcfs_booking_assigned);
+  printf("%44s%d\n","Number of Bookings Rejected:", fcfs_booking_rejected);
+  printf("\n");
+  printf("%35s\n","Utilization of Time Slot:");
+  printf("%24s","room_A"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomA)) / 168.0) * 100.0); printf("%%\n");
+  printf("%24s","room_B"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomB)) / 168.0) * 100.0); printf("%%\n");
+  printf("%24s","room_C"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomC)) / 168.0) * 100.0); printf("%%\n");
+  printf("%28s","webcam_FHD"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_webcam_FHD_1+fcfs_count_webcam_FHD_2)))/336.0))*100.0); printf("%%\n");
+  printf("%28s","webcam_UHD"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_webcam_UHD)) / 168.0) * 100.0); printf("%%\n");
+  printf("%28s","monitor_50"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_monitor_50_1+fcfs_count_monitor_50_2)))/336.0))*100.0); printf("%%\n");
+  printf("%28s","monitor_75"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_monitor_75)) / 168.0) * 100.0); printf("%%\n");
+  printf("%28s","projector_2K"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_projector_2K_1+fcfs_count_projector_2K_2)))/336.0))*100.0); printf("%%\n");
+  printf("%28s","projector_4K"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_projector_4K)) / 168.0) * 100.0); printf("%%\n");
+  printf("%28s","screen_100"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_screen_100_1+fcfs_count_screen_100_2)))/336.0))*100.0); printf("%%\n");
+  printf("%28s","screen_150"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_screen_150)) / 168.0) * 100.0); printf("%%\n");
+  //printf("%35s\n","Invalid request(s) made:What is this???????????????????????");
+  printf("%11s\n","For PRIO:");
+  printf("%44s%d\n","Total Number of Bookings Received:", total_booking_received);
+  printf("%44s%d\n","Number of Bookings Assigned:", prio_booking_assigned);
+  printf("%44s%d\n","Number of Bookings Rejected:", prio_booking_rejected);
+  printf("\n");
+  printf("%35s\n","Utilization of Time Slot:");
+  printf("%24s","room_A"); printf("%8s%.1f","- ",(1.0-((float)(168-prio_count_roomA)) / 168.0) * 100.0); printf("%%\n");
+  printf("%24s","room_B"); printf("%8s%.1f","- ",(1.0-((float)(168-prio_count_roomB)) / 168.0) * 100.0); printf("%%\n");
+  printf("%24s","room_C"); printf("%8s%.1f","- ",(1.0-((float)(168-prio_count_roomC)) / 168.0) * 100.0); printf("%%\n");
+  printf("%28s","webcam_FHD"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_webcam_FHD_1+prio_count_webcam_FHD_2)))/336.0))*100.0); printf("%%\n");
+  printf("%28s","webcam_UHD"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_webcam_UHD)) / 168.0) * 100.0); printf("%%\n");
+  printf("%28s","monitor_50"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_monitor_50_1+prio_count_monitor_50_2)))/336.0))*100.0); printf("%%\n");
+  printf("%28s","monitor_75"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_monitor_75)) / 168.0) * 100.0); printf("%%\n");
+  printf("%28s","projector_2K"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_projector_2K_1+prio_count_projector_2K_2)))/336.0))*100.0); printf("%%\n");
+  printf("%28s","projector_4K"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_projector_4K)) / 168.0) * 100.0); printf("%%\n");
+  printf("%28s","screen_100"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_screen_100_1+prio_count_screen_100_2)))/336.0))*100.0); printf("%%\n");
+  printf("%28s","screen_150"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_screen_150)) / 168.0) * 100.0); printf("%%\n");
+  //printf("%35s\n","Invalid request(s) made:What is this???????????????????????");
+}
 //<===============================function==============================>
 int main(void) {
   char buf[80]={0}; // Child read
@@ -1211,7 +1378,7 @@ int main(void) {
   remove("PRIOBookingAccepted.log");
   remove("PRIOBookingRejected.log");
   //Create new pipe
-  for (i = 0;i < 6; i++){
+  for (i = 0;i < 8; i++){
     if (pipe(pipes[i]) < 0){
         printf("pipe creation error\n");
         exit(1);
@@ -1219,14 +1386,14 @@ int main(void) {
   }
 
   //Create Child
-  for(k = 0;k < 3; k++){
+  for(k = 0;k < 4; k++){
     child[k] = fork();
     if (child[k]<0) {
     printf("Fork Failed\n");
     exit(1);
     } else if (child[k]==0) {
       //Close unused pipes in Child
-      for (j = 0; j < 6; j++){
+      for (j = 0; j < 8; j++){
         if(j != k*2){
           close(pipes[j][0]);
         }
@@ -1238,7 +1405,7 @@ int main(void) {
     }
   }  
 
-  if(k!=3){ //Child Process
+  if(k!=4){ //Child Process
     while(1){
       memset(buf,0,sizeof(buf));
       int n;
@@ -1258,6 +1425,27 @@ int main(void) {
         //printf("I am Child %d: %s\n",k,buf);
         strcpy(buf2, "Done");
         write(pipes[5][1],buf2,4);
+      } else if (strcmp(buf,"all")==0){ //Child 3 => All
+        //Reset counters to 0
+        total_booking_received = 0; 
+        fcfs_booking_assigned = 0; fcfs_booking_rejected = 0;
+        fcfs_count_roomA = 0; fcfs_count_roomB = 0; fcfs_count_roomC = 0;
+        fcfs_count_webcam_FHD_1 = 0; fcfs_count_webcam_FHD_2 = 0; fcfs_count_webcam_UHD = 0;
+        fcfs_count_monitor_50_1 = 0; fcfs_count_monitor_50_2 = 0; fcfs_count_monitor_75 = 0;
+        fcfs_count_projector_2K_1 = 0; fcfs_count_projector_2K_2 = 0; fcfs_count_projector_4K = 0;
+        fcfs_count_screen_100_1 = 0; fcfs_count_screen_100_2 = 0; fcfs_count_screen_150 = 0;
+        prio_booking_assigned = 0; prio_booking_rejected = 0;
+        prio_count_roomA = 0; prio_count_roomB = 0; prio_count_roomC = 0;
+        prio_count_webcam_FHD_1 = 0; prio_count_webcam_FHD_2 = 0; prio_count_webcam_UHD = 0;
+        prio_count_monitor_50_1 = 0; prio_count_monitor_50_2 = 0; prio_count_monitor_75 = 0;
+        prio_count_projector_2K_1 = 0; prio_count_projector_2K_2 = 0; prio_count_projector_4K = 0;
+        prio_count_screen_100_1 = 0; prio_count_screen_100_2 = 0; prio_count_screen_150 = 0;
+        //printf("I am Child %d: %s\n",k,buf);
+        start_printBookings(1);
+        start_printBookings(2);
+        printSummaryReport();
+        strcpy(buf2, "Done");
+        write(pipes[7][1],buf2,4);
       } else if (strcmp(buf,"end")==0){ //ALL Child exit
         //printf("I am Child %d: %s\n",k,buf);
         exit(0);
@@ -1326,6 +1514,14 @@ int main(void) {
           //printf("buf2=%s\n",buf2);
           printf("-> [Done!]\n");
           strcpy(opti,"");
+        } else if (strcmp(all,"ALL")==0){
+          write(pipes[6][1],"all",4);
+          read(pipes[7][0],buf2,4);
+          //printf("buf2=%s\n",buf2);
+          printf("-> [Done!]\n");
+          strcpy(all,"");
+        } else {
+          printf("Error, Please try again!\n");
         }
       } else if (strstr(input, "addMeeting")!=NULL || 
                 strstr(input, "addPresentation")!=NULL ||
