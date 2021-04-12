@@ -23,13 +23,14 @@ char *str;
 
 /*regx pattern*/
 char ptnKeyWord[100];
-char* ptnTenant = "[-tenant]{6}";
+char* ptnTenant = "[-tenant]{6}[ABCDE]";
 char* ptnDate = "[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])";
 char* ptnTime = "(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9])";
 char* ptnHour = "([0-9]*[.])[0-9]+";
 char* ptnPersonNumber = "[0-9]+";
 char* ptnRoom = "[room]{4}";
 char* ptnDevice = "(.*)_(.*)";
+//char* ptnBatch = "[-]{1}(.*)[.dat]{4}"; <====================HERE!!!!!!
 
 //pipes and child
 int child[4];
@@ -99,12 +100,12 @@ int prio_count_screen_100_1 = 0; int prio_count_screen_100_2 = 0; int prio_count
 void define_keyword(char *ptnKeyWord){
   strcpy(ptnKeyWord, "(");
   strcat(ptnKeyWord, ADDMET);
-  strcat(ptnKeyWord, "|");
-  strcat(ptnKeyWord, ADDPRE);
-  strcat(ptnKeyWord, "|");
-  strcat(ptnKeyWord, ADDCON);
-  strcat(ptnKeyWord, "|");
-  strcat(ptnKeyWord, BOKDEV);
+  strcat(ptnKeyWord, "|");strcat(ptnKeyWord, ADDPRE);
+  strcat(ptnKeyWord, "|");strcat(ptnKeyWord, ADDCON);
+  strcat(ptnKeyWord, "|");strcat(ptnKeyWord, BOKDEV);
+  strcat(ptnKeyWord, "|");strcat(ptnKeyWord, ADDBAT);
+  strcat(ptnKeyWord, "|");strcat(ptnKeyWord, PRTBOK);
+  strcat(ptnKeyWord, "|");strcat(ptnKeyWord, ENDPGM);
   strcat(ptnKeyWord, ")");
 }
 
@@ -498,6 +499,7 @@ void schedulingChecking(char *input){
 
 //Check the device pair requirement
 bool devicePairChecking(char *input){
+  char keyword[30];
   char device_1[30] = {0};
   char device_2[30] = {0};
   int m;
@@ -506,7 +508,11 @@ bool devicePairChecking(char *input){
       m = match(str,ptnKeyWord);
       if(m){
         if(strstr("bookDevice",str)!=NULL){
-          return(true);
+          strcpy(keyword,"bookDevice");
+        } else if (strstr("addPresentation",str)!=NULL) {
+          strcpy(keyword,"addPresentation");
+        } else if (strstr("addConference",str)!=NULL) {
+          strcpy(keyword,"addConference");
         }
       }
       m = match(str,ptnTenant);
@@ -530,6 +536,22 @@ bool devicePairChecking(char *input){
       }
     //find next string
     NEXT:str = strtok (NULL, " ");
+  }
+  //Devices are mandatory in Presentation and Conference booking
+  if(strstr(keyword, "addPresentation")!=NULL || strstr(keyword, "addConference")!=NULL){
+    if(device_1[0] == '\0'){
+      return(false);
+    }
+    if(device_2[0] == '\0'){
+      return(false);
+    }
+  }
+  if(strstr(keyword, "bookDevice")!=NULL){
+    if(device_1[0] == '\0'){
+      return(false);
+    } else {
+      return(true);
+    }
   }
   if(strstr(device_1, "projector")!=NULL){
     if(strstr(device_2, "screen")!=NULL){
@@ -579,6 +601,8 @@ void batchFileHandler(char *filename){
   FILE *infilep, *outfilep;
   char line[100];
   char file[100];
+  int counter_print_error = 0;
+  bool no_error = true;
   strncpy(file, filename, strlen(filename)-2);
   file[strlen(filename)-2] = '\0';
   infilep = fopen(file, "r");
@@ -588,11 +612,19 @@ void batchFileHandler(char *filename){
     exit(1);
   }
   while (fgets( line, 100, infilep ) != NULL ) {
-    fprintf(outfilep, "%s", line); //Write to allBooking.log
+    char original_input[100];
+    strncpy(original_input, line, strlen(line));
+    if(devicePairChecking(line)){ //Device pair checking
+      fprintf(outfilep, "%s", original_input); //Write to allBooking.log
+    } else {
+      no_error = false;
+      if (counter_print_error == 0) {printf("Wrong device pair!\n"); counter_print_error++;}
+    }
   }
   fprintf(outfilep, "%s", "\n");
   fclose(infilep);
   fclose(outfilep);
+  if(no_error){printf("-> [Pending]\n");}
 }
 
 //Count tenant record
@@ -903,12 +935,14 @@ void print_accepted(int algorithm){
     fprintf(Output, "%s\n", "*** Room Booking – ACCEPTED / PRIO ***");
     //printf("*** Room Booking – ACCEPTED / PRIO ***\n");
   }
+  fclose(Output);
   fprintf(Output, "%s\n", "");
   for(j=0;j<tenant_A_count;j++){
     if(tenant_A_count == 0){
       break;
     }
     if(j==0){
+      Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "Tenant_A has the following bookings:");
       //printf("Tenant_A has the following bookings:\n");
       fprintf(Output, "%s\n", "");
@@ -926,12 +960,12 @@ void print_accepted(int algorithm){
     printAppointmentSchedule(tenant_A_record[j],1);
   }
 
-  Output = fopen("RBM_Report_G15.txt", "a");
   for(j=0;j<tenant_B_count;j++){
     if(tenant_B_count == 0){
       break;
     }
     if(j==0){
+      Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
       //printf("\n");
       fprintf(Output, "%s\n", "Tenant_B has the following bookings:");
@@ -951,12 +985,12 @@ void print_accepted(int algorithm){
     printAppointmentSchedule(tenant_B_record[j],1);
   }
 
-  Output = fopen("RBM_Report_G15.txt", "a");
   for(j=0;j<tenant_C_count;j++){
     if(tenant_C_count == 0){
       break;
     }
     if(j==0){
+      Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
       //printf("\n");
       fprintf(Output, "%s\n", "Tenant_C has the following bookings:");
@@ -976,12 +1010,12 @@ void print_accepted(int algorithm){
     printAppointmentSchedule(tenant_C_record[j],1);
   }
   
-  Output = fopen("RBM_Report_G15.txt", "a");
   for(j=0;j<tenant_D_count;j++){
     if(tenant_D_count == 0){
       break;
     }
     if(j==0){
+      Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
       //printf("\n");
       fprintf(Output, "%s\n", "Tenant_D has the following bookings:");
@@ -1001,12 +1035,12 @@ void print_accepted(int algorithm){
     printAppointmentSchedule(tenant_D_record[j],1);
   }
   
-  Output = fopen("RBM_Report_G15.txt", "a");
   for(j=0;j<tenant_E_count;j++){
     if(tenant_E_count == 0){
       break;
     }
     if(j==0){
+      Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
       //printf("\n");
       fprintf(Output, "%s\n", "Tenant_E has the following bookings:");
@@ -1105,12 +1139,13 @@ void print_rejected(int algorithm){
     fprintf(Output, "%s\n", "*** Room Booking – REJECTED / PRIO ***");
     //printf("*** Room Booking – REJECTED / PRIO ***\n");
   }
-  
+  fclose(Output);
   for(i=0;i<tenant_A_count;i++){
     if(tenant_A_count == 0){
       break;
     }
     if(i==0){
+      Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
       //printf("\n");
       fprintf(Output, "%s%d%s\n", "Tenant_A (there are ",tenant_A_count," bookings rejected)");
@@ -1130,12 +1165,12 @@ void print_rejected(int algorithm){
     printAppointmentSchedule(tenant_A_record[i],0);
   }
 
-  Output = fopen("RBM_Report_G15.txt", "a");
   for(i=0;i<tenant_B_count;i++){
     if(tenant_B_count == 0){
       break;
     }
     if(i==0){
+      Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
       //printf("\n");
       fprintf(Output, "%s%d%s\n", "Tenant_B (there are ",tenant_B_count," bookings rejected)");
@@ -1155,12 +1190,12 @@ void print_rejected(int algorithm){
     printAppointmentSchedule(tenant_B_record[i],0);
   }
 
-  Output = fopen("RBM_Report_G15.txt", "a");
   for(i=0;i<tenant_C_count;i++){
     if(tenant_C_count == 0){
       break;
     }
     if(i==0){
+      Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
       //printf("\n");
       fprintf(Output, "%s%d%s\n", "Tenant_C (there are ",tenant_C_count," bookings rejected)");
@@ -1180,12 +1215,12 @@ void print_rejected(int algorithm){
     printAppointmentSchedule(tenant_C_record[i],0);
   }
 
-  Output = fopen("RBM_Report_G15.txt", "a");
   for(i=0;i<tenant_D_count;i++){
     if(tenant_D_count == 0){
       break;
     }
     if(i==0){
+      Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
       //printf("\n");
       fprintf(Output, "%s%d%s\n", "Tenant_D (there are ",tenant_D_count," bookings rejected)");
@@ -1205,12 +1240,12 @@ void print_rejected(int algorithm){
     printAppointmentSchedule(tenant_D_record[i],0);
   }
 
-  Output = fopen("RBM_Report_G15.txt", "a");
   for(i=0;i<tenant_E_count;i++){
     if(tenant_E_count == 0){
       break;
     }
     if(i==0){
+      Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
       //printf("\n");
       fprintf(Output, "%s%d%s\n", "Tenant_E (there are ",tenant_E_count," bookings rejected)");
@@ -1476,45 +1511,99 @@ void printSummaryReport(){
   //printf("\n");
   fprintf(Output, "%35s\n","Utilization of Time Slot:");
   //printf("%35s\n","Utilization of Time Slot:");
-  fprintf(Output, "%24s","room_A"); fprintf(Output, "%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomA)) / 168.0) * 100.0); fprintf(Output, "%s\n","%%")
-  //printf("%24s","room_A"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomA)) / 168.0) * 100.0); printf("%%\n"); <==================================here
-  printf("%24s","room_B"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomB)) / 168.0) * 100.0); printf("%%\n");
-  printf("%24s","room_C"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomC)) / 168.0) * 100.0); printf("%%\n");
-  printf("%28s","webcam_FHD"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_webcam_FHD_1+fcfs_count_webcam_FHD_2)))/336.0))*100.0); printf("%%\n");
-  printf("%28s","webcam_UHD"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_webcam_UHD)) / 168.0) * 100.0); printf("%%\n");
-  printf("%28s","monitor_50"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_monitor_50_1+fcfs_count_monitor_50_2)))/336.0))*100.0); printf("%%\n");
-  printf("%28s","monitor_75"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_monitor_75)) / 168.0) * 100.0); printf("%%\n");
-  printf("%28s","projector_2K"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_projector_2K_1+fcfs_count_projector_2K_2)))/336.0))*100.0); printf("%%\n");
-  printf("%28s","projector_4K"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_projector_4K)) / 168.0) * 100.0); printf("%%\n");
-  printf("%28s","screen_100"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_screen_100_1+fcfs_count_screen_100_2)))/336.0))*100.0); printf("%%\n");
-  printf("%28s","screen_150"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_screen_150)) / 168.0) * 100.0); printf("%%\n");
-  //printf("%35s\n","Invalid request(s) made:What is this???????????????????????");
-  printf("%11s\n","For PRIO:");
-  printf("%44s%d\n","Total Number of Bookings Received:", total_booking_received);
-  printf("%44s%d\n","Number of Bookings Assigned:", prio_booking_assigned);
-  printf("%44s%d\n","Number of Bookings Rejected:", prio_booking_rejected);
-  printf("\n");
-  printf("%35s\n","Utilization of Time Slot:");
-  printf("%24s","room_A"); printf("%8s%.1f","- ",(1.0-((float)(168-prio_count_roomA)) / 168.0) * 100.0); printf("%%\n");
-  printf("%24s","room_B"); printf("%8s%.1f","- ",(1.0-((float)(168-prio_count_roomB)) / 168.0) * 100.0); printf("%%\n");
-  printf("%24s","room_C"); printf("%8s%.1f","- ",(1.0-((float)(168-prio_count_roomC)) / 168.0) * 100.0); printf("%%\n");
-  printf("%28s","webcam_FHD"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_webcam_FHD_1+prio_count_webcam_FHD_2)))/336.0))*100.0); printf("%%\n");
-  printf("%28s","webcam_UHD"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_webcam_UHD)) / 168.0) * 100.0); printf("%%\n");
-  printf("%28s","monitor_50"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_monitor_50_1+prio_count_monitor_50_2)))/336.0))*100.0); printf("%%\n");
-  printf("%28s","monitor_75"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_monitor_75)) / 168.0) * 100.0); printf("%%\n");
-  printf("%28s","projector_2K"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_projector_2K_1+prio_count_projector_2K_2)))/336.0))*100.0); printf("%%\n");
-  printf("%28s","projector_4K"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_projector_4K)) / 168.0) * 100.0); printf("%%\n");
-  printf("%28s","screen_100"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_screen_100_1+prio_count_screen_100_2)))/336.0))*100.0); printf("%%\n");
-  printf("%28s","screen_150"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_screen_150)) / 168.0) * 100.0); printf("%%\n");
-  //printf("%35s\n","Invalid request(s) made:What is this???????????????????????");
+  fprintf(Output, "%24s","room_A"); fprintf(Output, "%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomA)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");
+  //printf("%24s","room_A"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomA)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%24s","room_B"); fprintf(Output, "%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomB)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");
+  //printf("%24s","room_B"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomB)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%24s","room_C"); fprintf(Output, "%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomC)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");
+  //printf("%24s","room_C"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomC)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%28s","webcam_FHD"); fprintf(Output, "%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_webcam_FHD_1+fcfs_count_webcam_FHD_2)))/336.0))*100.0); fprintf(Output, "%s\n","%");
+  //printf("%28s","webcam_FHD"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_webcam_FHD_1+fcfs_count_webcam_FHD_2)))/336.0))*100.0); printf("%%\n");
+  fprintf(Output, "%28s","webcam_UHD"); fprintf(Output, "%4s%.1f","- ",(1.0-((float)(168-fcfs_count_webcam_UHD)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");
+  //printf("%28s","webcam_UHD"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_webcam_UHD)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%28s","monitor_50"); fprintf(Output, "%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_monitor_50_1+fcfs_count_monitor_50_2)))/336.0))*100.0); fprintf(Output, "%s\n","%");
+  //printf("%28s","monitor_50"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_monitor_50_1+fcfs_count_monitor_50_2)))/336.0))*100.0); printf("%%\n");
+  fprintf(Output, "%28s","monitor_75"); fprintf(Output, "%4s%.1f","- ",(1.0-((float)(168-fcfs_count_monitor_75)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");  
+  //printf("%28s","monitor_75"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_monitor_75)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%28s","projector_2K"); fprintf(Output, "%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_projector_2K_1+fcfs_count_projector_2K_2)))/336.0))*100.0); fprintf(Output, "%s\n","%"); 
+  //printf("%28s","projector_2K"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_projector_2K_1+fcfs_count_projector_2K_2)))/336.0))*100.0); printf("%%\n");
+  fprintf(Output, "%28s","projector_4K"); fprintf(Output, "%4s%.1f","- ",(1.0-((float)(168-fcfs_count_projector_4K)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");  
+  //printf("%28s","projector_4K"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_projector_4K)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%28s","screen_100"); fprintf(Output, "%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_screen_100_1+fcfs_count_screen_100_2)))/336.0))*100.0); fprintf(Output, "%s\n","%"); 
+  //printf("%28s","screen_100"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_screen_100_1+fcfs_count_screen_100_2)))/336.0))*100.0); printf("%%\n");
+  fprintf(Output, "%28s","screen_150"); fprintf(Output, "%4s%.1f","- ",(1.0-((float)(168-fcfs_count_screen_150)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");  
+  //printf("%28s","screen_150"); printf("%4s%.1f","- ",(1.0-((float)(168-fcfs_count_screen_150)) / 168.0) * 100.0); printf("%%\n");
+  //printf("%35s\n","Invalid request(s) made:What is this???????????????????????");<======================================================This
+  fprintf(Output, "%s\n", "");
+  fprintf(Output, "%11s\n","For PRIO:");
+  //printf("%11s\n","For PRIO:");
+  fprintf(Output, "%44s%d\n","Total Number of Bookings Received:", total_booking_received);
+  //printf("%44s%d\n","Total Number of Bookings Received:", total_booking_received);
+  fprintf(Output, "%44s%d\n","Number of Bookings Assigned:", prio_booking_assigned);
+  //printf("%44s%d\n","Number of Bookings Assigned:", prio_booking_assigned);
+  fprintf(Output, "%44s%d\n","Number of Bookings Rejected:", prio_booking_rejected);
+  //printf("%44s%d\n","Number of Bookings Rejected:", prio_booking_rejected);
+  fprintf(Output, "%s\n", "");
+  //printf("\n");
+  fprintf(Output, "%35s\n","Utilization of Time Slot:");
+  //printf("%35s\n","Utilization of Time Slot:");
+  fprintf(Output, "%24s","room_A"); fprintf(Output, "%8s%.1f","- ",(1.0-((float)(168-prio_count_roomA)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");
+  //printf("%24s","room_A"); printf("%8s%.1f","- ",(1.0-((float)(168-prio_count_roomA)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%24s","room_B"); fprintf(Output, "%8s%.1f","- ",(1.0-((float)(168-prio_count_roomB)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");
+  //printf("%24s","room_B"); printf("%8s%.1f","- ",(1.0-((float)(168-prio_count_roomB)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%24s","room_C"); fprintf(Output, "%8s%.1f","- ",(1.0-((float)(168-prio_count_roomC)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");
+  //printf("%24s","room_C"); printf("%8s%.1f","- ",(1.0-((float)(168-prio_count_roomC)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%28s","webcam_FHD"); fprintf(Output, "%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_webcam_FHD_1+prio_count_webcam_FHD_2)))/336.0))*100.0); fprintf(Output, "%s\n","%");
+  //printf("%28s","webcam_FHD"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_webcam_FHD_1+prio_count_webcam_FHD_2)))/336.0))*100.0); printf("%%\n");
+  fprintf(Output, "%28s","webcam_UHD"); fprintf(Output, "%4s%.1f","- ",(1.0-((float)(168-prio_count_webcam_UHD)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");
+  //printf("%28s","webcam_UHD"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_webcam_UHD)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%28s","monitor_50"); fprintf(Output, "%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_monitor_50_1+prio_count_monitor_50_2)))/336.0))*100.0); fprintf(Output, "%s\n","%");
+  //printf("%28s","monitor_50"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_monitor_50_1+prio_count_monitor_50_2)))/336.0))*100.0); printf("%%\n");
+  fprintf(Output, "%28s","monitor_75"); fprintf(Output, "%4s%.1f","- ",(1.0-((float)(168-prio_count_monitor_75)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");  
+  //printf("%28s","monitor_75"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_monitor_75)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%28s","projector_2K"); fprintf(Output, "%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_projector_2K_1+prio_count_projector_2K_2)))/336.0))*100.0); fprintf(Output, "%s\n","%"); 
+  //printf("%28s","projector_2K"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_projector_2K_1+prio_count_projector_2K_2)))/336.0))*100.0); printf("%%\n");
+  fprintf(Output, "%28s","projector_4K"); fprintf(Output, "%4s%.1f","- ",(1.0-((float)(168-prio_count_projector_4K)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");  
+  //printf("%28s","projector_4K"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_projector_4K)) / 168.0) * 100.0); printf("%%\n");
+  fprintf(Output, "%28s","screen_100"); fprintf(Output, "%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_screen_100_1+prio_count_screen_100_2)))/336.0))*100.0); fprintf(Output, "%s\n","%"); 
+  //printf("%28s","screen_100"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_screen_100_1+prio_count_screen_100_2)))/336.0))*100.0); printf("%%\n");
+  fprintf(Output, "%28s","screen_150"); fprintf(Output, "%4s%.1f","- ",(1.0-((float)(168-prio_count_screen_150)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");  
+  //printf("%28s","screen_150"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_screen_150)) / 168.0) * 100.0); printf("%%\n");
+  //printf("%35s\n","Invalid request(s) made:What is this???????????????????????");<======================================================This
   fclose(Output);
+}
+
+//Command Checking
+bool commandChecking(char *input){
+  int counter = 0; int m = 0;
+  char keyword[20];
+  str = strtok (input," ");
+  while (str != NULL) {
+    if(counter == 0){ //Check keyword
+      m = match(str,ptnKeyWord);
+      if(!m){printf("Wrong Keyword!\n");return(false);} 
+      else {strcpy(keyword,str); m=0;}
+    } else if (counter == 1){
+      if((strstr(str, "addMeeting") != NULL) || (strstr(str, "addPresentation") != NULL) ||
+        (strstr(str, "addConference") != NULL) ||(strstr(str, "bookDevice") != NULL)){
+        m = match(str,ptnTenant);
+        if(!m){printf("Wrong Tenant!\n");return(false);} 
+        m = 0;
+      } else if ((strstr(str, "addBatch") != NULL)){ //<========HERE!!! AddBatch checking
+        m = match(str,ptn);
+      } //<=============printBookings Checking ...... so on
+    }
+    counter++;
+    str = strtok (NULL, " ");
+  }
+  return(true);
 }
 //<===============================function==============================>
 int main(void) {
   char buf[80]={0}; // Child read
   char buf2[80]={0}; //Parent read
 
-  //remove("allBooking.log");
+  //remove("allBooking.log"); <================================Remember!!!!!
   remove("FCFSBookingAccepted.log");
   remove("FCFSBookingRejected.log");
   remove("PRIOSortedBooking.log");
@@ -1591,6 +1680,7 @@ int main(void) {
         write(pipes[7][1],buf2,4);
       } else if (strcmp(buf,"end")==0){ //ALL Child exit
         //printf("I am Child %d: %s\n",k,buf);
+        //<=======================Close child pipes before exit
         exit(0);
       }
     }
@@ -1609,13 +1699,18 @@ int main(void) {
     /*program start*/
     printf("~~ WELCOME TO PolySME ~~\n");
     //Get user input
-    while (1)
+    USER:while (1)
     {
       printf("Please enter booking:\n");
       // fgets(input, sizeof input, stdin);
       // scanf(" %[^;]",input);
       //get whole line
       fgets(input,255,stdin);
+      char original_input[100];
+      strncpy(original_input, input, strlen(input));
+      if(!commandChecking(original_input)){ //Command Checking
+        goto USER;
+      }
       if (strstr(input, "endProgram") != NULL) {
         for(j=0;j<5;j++){
           if(j%2==0){
@@ -1624,19 +1719,19 @@ int main(void) {
         }
         //write(pipes[0][1],"end",3);
         wait(NULL);
-        //remove("allBooking.log");
+        //remove("allBooking.log");<================================Remember!!!!!
         remove("FCFSBookingAccepted.log");
         remove("FCFSBookingRejected.log");
         remove("PRIOSortedBooking.log");
         remove("PRIOBookingAccepted.log");
         remove("PRIOBookingRejected.log");
         //remove("OPTIBooking.log");
+        //<=============================================Remember close Parent pipes
         printf("-> Bye!\n");
         exit(0);
         //break;
       } else if (strstr(input, "addBatch")!=NULL){
         batchFileHandler(batchFileName(input));
-        printf("-> [Pending]\n");
       } else if (strstr(input, "printBookings")!=NULL){
         schedulingChecking(input);
         if(strcmp(fcfs,"fcfs")==0){
