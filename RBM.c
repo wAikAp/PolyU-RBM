@@ -647,6 +647,8 @@ int tenantRecordArrange(char *input){
 
 //Reconstruct print pattern
 void printAppointmentSchedule(char *input, int accept_or_reject){
+  FILE* Output_schedule;
+  Output_schedule = fopen("RBM_Report_G15.txt", "a");
   //Print Date, Start, End
   int date; int end; int count=0; int start_time = 0; int hour = 0; char end_time[5]; char column_1_to_3[100]; char keyword[20];
   char column_4_to_5[100]; char column_6[100];
@@ -660,7 +662,8 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
     m = match(str,ptnDate);
     if(m){
       date = atoi(str+8);
-      printf("%-13s",str);
+      fprintf(Output_schedule, "%-13s",str);
+      //printf("%-13s",str);
       m = 0;
     }
     m = match(str,ptnTime);
@@ -668,7 +671,8 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
       char time_char[2];
       strncpy(time_char, str, 2);
       start_time = atoi(time_char);
-      printf("%-8s",str);
+      fprintf(Output_schedule, "%-8s",str);
+      //printf("%-8s",str);
       m = 0;
     }
     m = match(str,ptnHour);
@@ -684,7 +688,8 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
       /*if(start_time+hour>24){ <================print the end day if booking hour > 24
         printf("(%d)%-8s",(date+count),end_time);
       } else {*/
-        printf("%-8s",end_time);
+        fprintf(Output_schedule, "%-8s",end_time);
+        //printf("%-8s",end_time); <==================no need this one
       //}
       
       m = 0;
@@ -710,23 +715,34 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
     m = match(str,ptnKeyWord);
     if(m){
       if (strstr(str,"addMeeting")!=NULL){
-        printf("%-15s","Meeting");
+        fprintf(Output_schedule, "%-15s","Meeting");
+        //printf("%-15s","Meeting");
       } else if (strstr(str,"addPresentation")!=NULL){
-        printf("%-15s","Presentation");
+        fprintf(Output_schedule, "%-15s","Presentation");
+        //printf("%-15s","Presentation");
       } else if (strstr(str,"addConference")!=NULL){
-        printf("%-15s","Conference");
+        fprintf(Output_schedule, "%-15s","Conference");
+        //printf("%-15s","Conference");
       } else if (strstr(str,"bookDevice")!=NULL){
         strcpy(keyword,"bookDevice");
-        if(accept_or_reject == 1){printf("%-15s%-9s","*","*");}
-        else {printf("%-15s","*");}
+        if(accept_or_reject == 1){
+          fprintf(Output_schedule, "%-15s%-9s","*","*");
+          //printf("%-15s%-9s","*","*");
+        } else {
+          fprintf(Output_schedule, "%-15s","*");
+          //printf("%-15s","*");
+        }
       }
     }
     if (strstr(str,"room_A")!=NULL){
-      printf("%-9s","room_A");
+      fprintf(Output_schedule, "%-9s","room_A");
+      //printf("%-9s","room_A");
     } else if (strstr(str,"room_B")!=NULL){
-      printf("%-9s","room_B");
+      fprintf(Output_schedule, "%-9s","room_B");
+      //printf("%-9s","room_B");
     } else if (strstr(str,"room_C")!=NULL){
-      printf("%-9s","room_C");
+      fprintf(Output_schedule, "%-9s","room_C");
+      //printf("%-9s","room_C");
     }
     str = strtok (NULL, " ");
   }
@@ -747,7 +763,8 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
       if(counter==5){
          m = match(str,ptnDevice);
          if(m){
-           printf("%s\n",str);
+           fprintf(Output_schedule, "%s\n",str);
+           //printf("%s\n",str);
            m = 0;
          }
       }
@@ -755,9 +772,11 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
          m = match(str,ptnDevice);
          if(m){
           if(accept_or_reject == 0){
-            printf("%54s\n",str);
+            fprintf(Output_schedule, "%54s\n",str);
+            //printf("%54s\n",str);
           } else {
-            printf("%63s\n",str);
+            fprintf(Output_schedule, "%63s\n",str);
+            //printf("%63s\n",str);
           }
            m = 0;
          }
@@ -766,17 +785,20 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
       if(accept_or_reject == 0){
         if (counter == 5){
           if(!exist_devices){
-            printf("*\n");
+            fprintf(Output_schedule, "%s\n","*");
+            //printf("*\n");
           }
         }
       }
       if(counter==6){ //Print device in room booking
         m = match(str,ptnRoom);
         if(m){
-          printf("*\n");
+          fprintf(Output_schedule, "%s\n","*");
+          //printf("*\n");
           m = 0;
         } else {
-          printf("%s\n",str);
+          fprintf(Output_schedule, "%s\n",str);
+          //printf("%s\n",str);
           m = 0;
         }
       }
@@ -784,10 +806,12 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
         m = match(str,ptnDevice);
         if(m){
           if(accept_or_reject == 1){
-            printf("%63s\n",str);
+            fprintf(Output_schedule, "%63s\n",str);
+            //printf("%63s\n",str);
             m = 0;
           } else if (accept_or_reject == 0){
-            printf("%54s\n",str);
+            fprintf(Output_schedule, "%54s\n",str);
+            //printf("%54s\n",str);
             m = 0;
           }
         }
@@ -797,6 +821,7 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
     NEXT:counter++;
     str = strtok (NULL, " ");
   }
+  fclose(Output_schedule);
 }
 
 //Check keyword
@@ -821,10 +846,12 @@ void count_cmd_for_keyword(char *input){
 //Print accepted report
 void print_accepted(int algorithm){
   FILE *Accepted;
+  FILE *Output;
   tenant_A_count = 0; tenant_B_count = 0; tenant_C_count = 0; 
   tenant_D_count = 0; tenant_E_count = 0;
-
   int a = 0; int b = 0; int c = 0; int d = 0; int e = 0;
+
+  Output = fopen("RBM_Report_G15.txt", "a");
   if(algorithm == 1){
     Accepted = fopen("FCFSBookingAccepted.log", "r");
   } else if (algorithm == 2){
@@ -870,113 +897,163 @@ void print_accepted(int algorithm){
     }
   }
   if(algorithm == 1){
-    printf("*** Room Booking – ACCEPTED / FCFS ***\n");
+    fprintf(Output, "%s\n", "*** Room Booking – ACCEPTED / FCFS ***");
+    //printf("*** Room Booking – ACCEPTED / FCFS ***\n");
   } else if (algorithm == 2){
-    printf("*** Room Booking – ACCEPTED / PRIO ***\n");
+    fprintf(Output, "%s\n", "*** Room Booking – ACCEPTED / PRIO ***");
+    //printf("*** Room Booking – ACCEPTED / PRIO ***\n");
   }
-
+  fprintf(Output, "%s\n", "");
   for(j=0;j<tenant_A_count;j++){
     if(tenant_A_count == 0){
       break;
     }
     if(j==0){
-      printf("Tenant_A has the following bookings:\n");
-      printf("\n");
-      printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      fprintf(Output, "%s\n", "Tenant_A has the following bookings:");
+      //printf("Tenant_A has the following bookings:\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      //printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
       for(x=0;x<74;x++){
-        printf("=");
+        fprintf(Output, "%s", "=");
+        //printf("=");
       }
-      printf("\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fclose(Output);
     }
     printAppointmentSchedule(tenant_A_record[j],1);
   }
 
+  Output = fopen("RBM_Report_G15.txt", "a");
   for(j=0;j<tenant_B_count;j++){
     if(tenant_B_count == 0){
       break;
     }
     if(j==0){
-      printf("\n");
-      printf("Tenant_B has the following bookings:\n");
-      printf("\n");
-      printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%s\n", "Tenant_B has the following bookings:");
+      //printf("Tenant_B has the following bookings:\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      //printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
       for(x=0;x<74;x++){
-        printf("=");
+        fprintf(Output, "%s", "=");
+        //printf("=");
       }
-      printf("\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fclose(Output);
     }
     printAppointmentSchedule(tenant_B_record[j],1);
   }
 
+  Output = fopen("RBM_Report_G15.txt", "a");
   for(j=0;j<tenant_C_count;j++){
     if(tenant_C_count == 0){
       break;
     }
     if(j==0){
-      printf("\n");
-      printf("Tenant_C has the following bookings:\n");
-      printf("\n");
-      printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%s\n", "Tenant_C has the following bookings:");
+      //printf("Tenant_C has the following bookings:\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      //printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
       for(x=0;x<74;x++){
-        printf("=");
+        fprintf(Output, "%s", "=");
+        //printf("=");
       }
-      printf("\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fclose(Output);
     }
     printAppointmentSchedule(tenant_C_record[j],1);
   }
   
+  Output = fopen("RBM_Report_G15.txt", "a");
   for(j=0;j<tenant_D_count;j++){
     if(tenant_D_count == 0){
       break;
     }
     if(j==0){
-      printf("\n");
-      printf("Tenant_D has the following bookings:\n");
-      printf("\n");
-      printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%s\n", "Tenant_D has the following bookings:");
+      //printf("Tenant_D has the following bookings:\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      //printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
       for(x=0;x<74;x++){
-        printf("=");
+        fprintf(Output, "%s", "=");
+        //printf("=");
       }
-      printf("\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fclose(Output);
     }
     printAppointmentSchedule(tenant_D_record[j],1);
   }
   
+  Output = fopen("RBM_Report_G15.txt", "a");
   for(j=0;j<tenant_E_count;j++){
     if(tenant_E_count == 0){
       break;
     }
     if(j==0){
-      printf("\n");
-      printf("Tenant_E has the following bookings:\n");
-      printf("\n");
-      printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%s\n", "Tenant_E has the following bookings:");
+      //printf("Tenant_E has the following bookings:\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
+      //printf("%-13s%-8s%-8s%-15s%-9s%s\n","Date","Start","End","Type","Room","Device");
       for(x=0;x<74;x++){
-        printf("=");
+        fprintf(Output, "%s", "=");
+        //printf("=");
       }
-      printf("\n");
+      fprintf(Output, "%s\n", "");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fclose(Output);
     }
     printAppointmentSchedule(tenant_E_record[j],1);
   }
-  printf("%-10s\n","- End -");
+  Output = fopen("RBM_Report_G15.txt", "a");
+  fprintf(Output, "%-10s\n","- End -");
+  //printf("%-10s\n","- End -");
   for(x=0;x<74;x++){
-    printf("=");
+    fprintf(Output, "%s", "=");
+    //printf("=");
   }
-  printf("\n");
+  fprintf(Output, "%s\n", "");
+  fprintf(Output, "%s\n", "");
+  //printf("\n");
   tenant_A_count = 0;
   tenant_B_count = 0;
   tenant_C_count = 0;
   tenant_D_count = 0;
   tenant_E_count = 0;
+  fclose(Output);
   fclose(Accepted);
 }
 
 //Print rejected report
 void print_rejected(int algorithm){
   FILE *Rejected;
+  FILE *Output;
   int a = 0; int b = 0; int c = 0; int d = 0; int e = 0;
   tenant_A_count = 0; tenant_B_count = 0; tenant_C_count = 0; 
   tenant_D_count = 0; tenant_E_count = 0;
+
+  Output = fopen("RBM_Report_G15.txt", "a");
   if (algorithm == 1){
     Rejected = fopen("FCFSBookingRejected.log", "r");
   } else if (algorithm == 2){
@@ -1022,9 +1099,11 @@ void print_rejected(int algorithm){
     }
   }
   if (algorithm == 1){
-    printf("*** Room Booking – REJECTED / FCFS ***\n");
+    fprintf(Output, "%s\n", "*** Room Booking – REJECTED / FCFS ***");
+    //printf("*** Room Booking – REJECTED / FCFS ***\n");
   } else if (algorithm == 2){
-    printf("*** Room Booking – REJECTED / PRIO ***\n");
+    fprintf(Output, "%s\n", "*** Room Booking – REJECTED / PRIO ***");
+    //printf("*** Room Booking – REJECTED / PRIO ***\n");
   }
   
   for(i=0;i<tenant_A_count;i++){
@@ -1032,91 +1111,141 @@ void print_rejected(int algorithm){
       break;
     }
     if(i==0){
-      printf("\n");
-      printf("Tenant_A (there are %d bookings rejected)\n",tenant_A_count);
-      printf("\n");
-      printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%s%d%s\n", "Tenant_A (there are ",tenant_A_count," bookings rejected)");
+      //printf("Tenant_A (there are %d bookings rejected)\n",tenant_A_count);
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      //printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
       for(j=0;j<74;j++){
-        printf("=");
+        fprintf(Output, "%s", "=");
+        //printf("=");
       }
-      printf("\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fclose(Output);
     }
     printAppointmentSchedule(tenant_A_record[i],0);
   }
+
+  Output = fopen("RBM_Report_G15.txt", "a");
   for(i=0;i<tenant_B_count;i++){
     if(tenant_B_count == 0){
       break;
     }
     if(i==0){
-      printf("\n");
-      printf("Tenant_B (there are %d bookings rejected)\n",tenant_B_count);
-      printf("\n");
-      printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%s%d%s\n", "Tenant_B (there are ",tenant_B_count," bookings rejected)");
+      //printf("Tenant_B (there are %d bookings rejected)\n",tenant_B_count);
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      //printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
       for(j=0;j<74;j++){
-        printf("=");
+        fprintf(Output, "%s", "=");
+        //printf("=");
       }
-      printf("\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fclose(Output);
     }
     printAppointmentSchedule(tenant_B_record[i],0);
   }
+
+  Output = fopen("RBM_Report_G15.txt", "a");
   for(i=0;i<tenant_C_count;i++){
     if(tenant_C_count == 0){
       break;
     }
     if(i==0){
-      printf("\n");
-      printf("Tenant_C (there are %d bookings rejected)\n",tenant_C_count);
-      printf("\n");
-      printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%s%d%s\n", "Tenant_C (there are ",tenant_C_count," bookings rejected)");
+      //printf("Tenant_C (there are %d bookings rejected)\n",tenant_C_count);
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      //printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
       for(j=0;j<74;j++){
-        printf("=");
+        fprintf(Output, "%s", "=");
+        //printf("=");
       }
-      printf("\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fclose(Output);
     }
     printAppointmentSchedule(tenant_C_record[i],0);
   }
+
+  Output = fopen("RBM_Report_G15.txt", "a");
   for(i=0;i<tenant_D_count;i++){
     if(tenant_D_count == 0){
       break;
     }
     if(i==0){
-      printf("\n");
-      printf("Tenant_D (there are %d bookings rejected)\n",tenant_D_count);
-      printf("\n");
-      printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%s%d%s\n", "Tenant_D (there are ",tenant_D_count," bookings rejected)");
+      //printf("Tenant_D (there are %d bookings rejected)\n",tenant_D_count);
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      //printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
       for(j=0;j<74;j++){
-        printf("=");
+        fprintf(Output, "%s", "=");
+        //printf("=");
       }
-      printf("\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fclose(Output);
     }
     printAppointmentSchedule(tenant_D_record[i],0);
   }
+
+  Output = fopen("RBM_Report_G15.txt", "a");
   for(i=0;i<tenant_E_count;i++){
     if(tenant_E_count == 0){
       break;
     }
     if(i==0){
-      printf("\n");
-      printf("Tenant_E (there are %d bookings rejected)\n",tenant_E_count);
-      printf("\n");
-      printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%s%d%s\n", "Tenant_E (there are ",tenant_E_count," bookings rejected)");
+      //printf("Tenant_E (there are %d bookings rejected)\n",tenant_E_count);
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fprintf(Output, "%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
+      //printf("%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
       for(j=0;j<74;j++){
-        printf("=");
+        fprintf(Output, "%s", "=");
+        //printf("=");
       }
-      printf("\n");
+      fprintf(Output, "%s\n", "");
+      //printf("\n");
+      fclose(Output);
     }
     printAppointmentSchedule(tenant_E_record[i],0);
   }
-  printf("%-10s\n","- End -");
+
+  Output = fopen("RBM_Report_G15.txt", "a");
+  fprintf(Output, "%-10s\n","- End -");
+  //printf("%-10s\n","- End -");
   for(x=0;x<74;x++){
-    printf("=");
+    fprintf(Output, "%s", "=");
+    //printf("=");
   }
-  printf("\n");
+  fprintf(Output, "%s\n", "");
+  fprintf(Output, "%s\n", "");
+  //printf("\n");
   tenant_A_count = 0;
   tenant_B_count = 0;
   tenant_C_count = 0;
   tenant_D_count = 0;
   tenant_E_count = 0;
+  fclose(Output);
   fclose(Rejected);
 }
 
@@ -1325,17 +1454,30 @@ void start_printBookings(int algorithm){
 
 //Print summary (Utilization = 1-(used hour/all hour) * 100) <== to be confirmed
 void printSummaryReport(){
-  printf("*** Room Booking Manager – Summary Report ***\n");
-  printf("\n");
-  printf("Performance:\n");
-  printf("\n");
-  printf("%11s\n","For FCFS:");
-  printf("%44s%d\n","Total Number of Bookings Received:", total_booking_received);
-  printf("%44s%d\n","Number of Bookings Assigned:", fcfs_booking_assigned);
-  printf("%44s%d\n","Number of Bookings Rejected:", fcfs_booking_rejected);
-  printf("\n");
-  printf("%35s\n","Utilization of Time Slot:");
-  printf("%24s","room_A"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomA)) / 168.0) * 100.0); printf("%%\n");
+  FILE *Output;
+  Output = fopen("RBM_Report_G15.txt", "a");
+  fprintf(Output, "%s\n", "*** Room Booking Manager – Summary Report ***");
+  //printf("*** Room Booking Manager – Summary Report ***\n");
+  fprintf(Output, "%s\n", "");
+  //printf("\n");
+  fprintf(Output, "%s\n", "Performance:");
+  //printf("Performance:\n");
+  fprintf(Output, "%s\n", "");
+  //printf("\n");
+  fprintf(Output, "%11s\n","For FCFS:");
+  //printf("%11s\n","For FCFS:");
+  fprintf(Output, "%44s%d\n","Total Number of Bookings Received:", total_booking_received);
+  //printf("%44s%d\n","Total Number of Bookings Received:", total_booking_received);
+  fprintf(Output, "%44s%d\n","Number of Bookings Assigned:", fcfs_booking_assigned);
+  //printf("%44s%d\n","Number of Bookings Assigned:", fcfs_booking_assigned);
+  fprintf(Output, "%44s%d\n","Number of Bookings Rejected:", fcfs_booking_rejected);
+  //printf("%44s%d\n","Number of Bookings Rejected:", fcfs_booking_rejected);
+  fprintf(Output, "%s\n", "");
+  //printf("\n");
+  fprintf(Output, "%35s\n","Utilization of Time Slot:");
+  //printf("%35s\n","Utilization of Time Slot:");
+  fprintf(Output, "%24s","room_A"); fprintf(Output, "%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomA)) / 168.0) * 100.0); fprintf(Output, "%s\n","%%")
+  //printf("%24s","room_A"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomA)) / 168.0) * 100.0); printf("%%\n"); <==================================here
   printf("%24s","room_B"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomB)) / 168.0) * 100.0); printf("%%\n");
   printf("%24s","room_C"); printf("%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomC)) / 168.0) * 100.0); printf("%%\n");
   printf("%28s","webcam_FHD"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)fcfs_count_webcam_FHD_1+fcfs_count_webcam_FHD_2)))/336.0))*100.0); printf("%%\n");
@@ -1365,6 +1507,7 @@ void printSummaryReport(){
   printf("%28s","screen_100"); printf("%4s%.1f","- ",(1-(((float)(336.0-((float)prio_count_screen_100_1+prio_count_screen_100_2)))/336.0))*100.0); printf("%%\n");
   printf("%28s","screen_150"); printf("%4s%.1f","- ",(1.0-((float)(168-prio_count_screen_150)) / 168.0) * 100.0); printf("%%\n");
   //printf("%35s\n","Invalid request(s) made:What is this???????????????????????");
+  fclose(Output);
 }
 //<===============================function==============================>
 int main(void) {
