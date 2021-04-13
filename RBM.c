@@ -17,20 +17,21 @@ const char* ADDBAT = "addBatch";
 const char* PRTBOK = "printBookings";
 const char* ENDPGM = "endProgram";
 
+//Others
 char input[255];
 char input_from_file[255];
 char *str;
+char last_char = ';';
 
 /*regx pattern*/
 char ptnKeyWord[100];
-char* ptnTenant = "[-tenant]{6}[ABCDE]";
+char* ptnTenant = "[-tenant]{6}[_][ABCDE]";
 char* ptnDate = "[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])";
 char* ptnTime = "(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9])";
 char* ptnHour = "([0-9]*[.])[0-9]+";
-char* ptnPersonNumber = "[0-9]+";
+char* ptnPersonNumber = "^[0-9]*[1-9][0-9]*;?"; //^[0-9]*[1-9][0-9]*(;?)$
 char* ptnRoom = "[room]{4}";
 char* ptnDevice = "(.*)_(.*)";
-//char* ptnBatch = "[-]{1}(.*)[.dat]{4}"; <====================HERE!!!!!!
 
 //pipes and child
 int child[4];
@@ -608,7 +609,7 @@ void batchFileHandler(char *filename){
   infilep = fopen(file, "r");
   outfilep = fopen("allBooking.log", "a");
   if (infilep == NULL) {
-    printf("Error in opening input file\n");
+    printf("File not found!\n");
     exit(1);
   }
   while (fgets( line, 100, infilep ) != NULL ) {
@@ -1579,23 +1580,48 @@ bool commandChecking(char *input){
   char keyword[20];
   str = strtok (input," ");
   while (str != NULL) {
+    m = 0;
     if(counter == 0){ //Check keyword
       m = match(str,ptnKeyWord);
-      if(!m){printf("Wrong Keyword!\n");return(false);} 
+      if(!m){printf("Wrong Keyword! (addMeeting, addPresentation, bookDevice, addConference, addBatch, bookDevice, printBookings, endProgram)\n");return(false);} 
       else {strcpy(keyword,str); m=0;}
     } else if (counter == 1){
-      if((strstr(str, "addMeeting") != NULL) || (strstr(str, "addPresentation") != NULL) ||
-        (strstr(str, "addConference") != NULL) ||(strstr(str, "bookDevice") != NULL)){
+      if((strstr(keyword, "addMeeting") != NULL) || (strstr(keyword, "addPresentation") != NULL) ||
+        (strstr(keyword, "addConference") != NULL) ||(strstr(keyword, "bookDevice") != NULL)){
         m = match(str,ptnTenant);
-        if(!m){printf("Wrong Tenant!\n");return(false);} 
+        if(!m){printf("Wrong Tenant! (-tenant_[ABCDE])\n");return(false);} 
         m = 0;
-      } else if ((strstr(str, "addBatch") != NULL)){ //<========HERE!!! AddBatch checking
-        m = match(str,ptn);
-      } //<=============printBookings Checking ...... so on
+      } else if ((strstr(keyword, "addBatch") != NULL)){
+        if(strstr(str, ".dat") == NULL){printf("Wrong Batch File! (-xxx.bat)\n");return(false);}
+      } 
+    } else if (counter == 2){
+      m = match(str,ptnDate);
+      if(!m){printf("Wrong Date Format! (YYYY-MM-DD)\n");return(false);} 
+      m = 0;
+    } else if (counter == 3){
+      m = match(str,ptnTime);
+      if(!m){printf("Wrong Time Format! (hh:mm)\n");return(false);} 
+      m = 0;
+    } else if (counter == 4){
+      m = match(str,ptnHour);
+      if(!m){printf("Wrong Hour Format! (n.n)\n");return(false);} 
+      m = 0;
+    } else if (counter == 5){
+      if(strstr(keyword, "bookDevice") != NULL){return true;} //Device checking in other function
+      else{
+        m = match(str,ptnPersonNumber);
+        if(!m){printf("Wrong Person Number! (n)\n");return(false);}
+        else {return(true);} //Device checking in other function
+      }
     }
-    counter++;
     str = strtok (NULL, " ");
+    if(str != NULL){counter++;}
   }
+  if(strstr(keyword, "addMeeting") != NULL && counter < 5){printf("Inadequate parameters!\n"); return (false);}
+  if(strstr(keyword, "addPresentation") != NULL && counter < 7){printf("Inadequate parameters!\n"); return (false);}
+  if(strstr(keyword, "addConference") != NULL && counter < 7){printf("Inadequate parameters!\n"); return (false);}
+  if(strstr(keyword, "bookDevice") != NULL && counter < 4){printf("Inadequate parameters!\n"); return (false);}
+  if(strstr(keyword, "addBatch") != NULL && counter < 1) {printf("Missing filename!\n"); return (false);}
   return(true);
 }
 //<===============================function==============================>
@@ -1708,6 +1734,10 @@ int main(void) {
       fgets(input,255,stdin);
       char original_input[100];
       strncpy(original_input, input, strlen(input));
+      if ((original_input[(strlen(input)-2)]) != last_char){ //Check the last char whether ;
+        printf("Missing ';' at the end of the command\n");
+        goto USER;
+      }
       if(!commandChecking(original_input)){ //Command Checking
         goto USER;
       }
@@ -1731,6 +1761,7 @@ int main(void) {
         exit(0);
         //break;
       } else if (strstr(input, "addBatch")!=NULL){
+        //printf("input: %s\n",input[9]);
         batchFileHandler(batchFileName(input));
       } else if (strstr(input, "printBookings")!=NULL){
         schedulingChecking(input);
@@ -1759,7 +1790,7 @@ int main(void) {
           printf("-> [Done!]\n");
           strcpy(all,"");
         } else {
-          printf("Error, Please try again!\n");
+          printf("Wrong Algorithm!\n");
         }
       } else if (strstr(input, "addMeeting")!=NULL || 
                 strstr(input, "addPresentation")!=NULL ||
