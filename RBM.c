@@ -28,7 +28,7 @@ char ptnKeyWord[100];
 char* ptnTenant = "[-tenant]{6}[_][ABCDE]";
 char* ptnDate = "[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])";
 char* ptnTime = "(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9])";
-char* ptnHour = "([0-9]*[.])[0-9]+";
+char* ptnHour = "([0-9]*[.])[0-9]{1}$";
 char* ptnPersonNumber = "^[0-9]*[1-9][0-9]*;?"; //^[0-9]*[1-9][0-9]*(;?)$
 char* ptnRoom = "[room]{4}";
 char* ptnDevice = "(.*)_(.*)";
@@ -554,6 +554,18 @@ bool devicePairChecking(char *input){
       return(true);
     }
   }
+  //Presentation can only apply projector and screen
+  if(strstr(keyword, "addPresentation")!=NULL){
+    if (strstr(device_1, "webcam")!=NULL || strstr(device_1, "monitor")!=NULL) {
+      return(false);
+    }
+  }
+  //Conferences can only apply webcam and monitors
+  if(strstr(keyword, "addConference")!=NULL){
+    if (strstr(device_1, "screen")!=NULL || strstr(device_1, "projector")!=NULL) {
+      return(false);
+    }
+  }
   if(strstr(device_1, "projector")!=NULL){
     if(strstr(device_2, "screen")!=NULL){
       return(true);
@@ -581,6 +593,59 @@ bool devicePairChecking(char *input){
   } else if (device_1[0] == '\0'){
     return(true);
   }
+}
+
+//Command Checking
+bool commandChecking(char *input){
+  int counter = 0; int m = 0;
+  char keyword[20];
+  str = strtok (input," ");
+  while (str != NULL) {
+    m = 0;
+    if(counter == 0){ //Check keyword
+      m = match(str,ptnKeyWord);
+      if(!m){printf("Wrong Keyword! (addMeeting, addPresentation, bookDevice, addConference, addBatch, bookDevice, printBookings, endProgram)\n");return(false);} 
+      else {strcpy(keyword,str); m=0;}
+    } else if (counter == 1){
+      if((strstr(keyword, "addMeeting") != NULL) || (strstr(keyword, "addPresentation") != NULL) ||
+        (strstr(keyword, "addConference") != NULL) ||(strstr(keyword, "bookDevice") != NULL)){
+        m = match(str,ptnTenant);
+        if(!m){printf("Wrong Tenant! (-tenant_[ABCDE])\n");return(false);} 
+        m = 0;
+      } else if ((strstr(keyword, "addBatch") != NULL)){
+        if(strstr(str, ".dat") == NULL){printf("Wrong Batch File! (-xxx.bat)\n");return(false);}
+      } 
+    } else if (counter == 2){
+      m = match(str,ptnDate);
+      if(!m){printf("Wrong Date Format! (YYYY-MM-DD)\n");return(false);} 
+      m = 0;
+    } else if (counter == 3){
+      m = match(str,ptnTime);
+      if(!m){printf("Wrong Time Format! (hh:mm)\n");return(false);} 
+      m = 0;
+    } else if (counter == 4){
+      m = match(str,ptnHour);
+      if(!m){printf("Wrong Format!\n");return(false);} 
+      m = 0;
+    } else if (counter == 5){
+      if(strstr(keyword, "bookDevice") != NULL){return true;} //Device checking in other function
+      else{
+        m = match(str,ptnPersonNumber);
+        if(!m){printf("Wrong Person Number! (n)\n");return(false);}
+        int person = atoi(str);
+        if(person > 20){printf("Error! 20 persons (at most) in a meeting\n");return(false);}
+        else {return(true);} //Device checking in other function
+      }
+    }
+    str = strtok (NULL, " ");
+    if(str != NULL){counter++;}
+  }
+  if(strstr(keyword, "addMeeting") != NULL && counter < 5){printf("Inadequate parameters!\n"); return (false);}
+  if(strstr(keyword, "addPresentation") != NULL && counter < 7){printf("Inadequate parameters!\n"); return (false);}
+  if(strstr(keyword, "addConference") != NULL && counter < 7){printf("Inadequate parameters!\n"); return (false);}
+  if(strstr(keyword, "bookDevice") != NULL && counter < 4){printf("Inadequate parameters!\n"); return (false);}
+  if(strstr(keyword, "addBatch") != NULL && counter < 1) {printf("Missing filename!\n"); return (false);}
+  return(true);
 }
 
 //Get the batch filename
@@ -613,13 +678,17 @@ void batchFileHandler(char *filename){
     exit(1);
   }
   while (fgets( line, 100, infilep ) != NULL ) {
-    char original_input[100];
-    strncpy(original_input, line, strlen(line));
-    if(devicePairChecking(line)){ //Device pair checking
-      fprintf(outfilep, "%s", original_input); //Write to allBooking.log
+    char original_input[100]; char line2[100];
+    strncpy(original_input, line, strlen(line)-1);
+    original_input[strlen(line)-1] = '\0';
+    strncpy(line2, line, strlen(line)-1);
+    line2[strlen(line)-1] = '\0';
+    if(devicePairChecking(line) && commandChecking(line2)){ //Device pair checking
+      fprintf(outfilep, "%s\n", original_input); //Write to allBooking.log
     } else {
       no_error = false;
-      if (counter_print_error == 0) {printf("Wrong device pair!\n"); counter_print_error++;}
+      if (counter_print_error == 0) {printf("Error! Please check the batch file\n"); counter_print_error++;}
+      exit(1);
     }
   }
   fprintf(outfilep, "%s", "\n");
@@ -936,8 +1005,8 @@ void print_accepted(int algorithm){
     fprintf(Output, "%s\n", "*** Room Booking – ACCEPTED / PRIO ***");
     //printf("*** Room Booking – ACCEPTED / PRIO ***\n");
   }
-  fclose(Output);
   fprintf(Output, "%s\n", "");
+  fclose(Output);
   for(j=0;j<tenant_A_count;j++){
     if(tenant_A_count == 0){
       break;
@@ -1054,7 +1123,6 @@ void print_accepted(int algorithm){
         fprintf(Output, "%s", "=");
         //printf("=");
       }
-      fprintf(Output, "%s\n", "");
       fprintf(Output, "%s\n", "");
       //printf("\n");
       fclose(Output);
@@ -1573,63 +1641,12 @@ void printSummaryReport(){
   //printf("%35s\n","Invalid request(s) made:What is this???????????????????????");<======================================================This
   fclose(Output);
 }
-
-//Command Checking
-bool commandChecking(char *input){
-  int counter = 0; int m = 0;
-  char keyword[20];
-  str = strtok (input," ");
-  while (str != NULL) {
-    m = 0;
-    if(counter == 0){ //Check keyword
-      m = match(str,ptnKeyWord);
-      if(!m){printf("Wrong Keyword! (addMeeting, addPresentation, bookDevice, addConference, addBatch, bookDevice, printBookings, endProgram)\n");return(false);} 
-      else {strcpy(keyword,str); m=0;}
-    } else if (counter == 1){
-      if((strstr(keyword, "addMeeting") != NULL) || (strstr(keyword, "addPresentation") != NULL) ||
-        (strstr(keyword, "addConference") != NULL) ||(strstr(keyword, "bookDevice") != NULL)){
-        m = match(str,ptnTenant);
-        if(!m){printf("Wrong Tenant! (-tenant_[ABCDE])\n");return(false);} 
-        m = 0;
-      } else if ((strstr(keyword, "addBatch") != NULL)){
-        if(strstr(str, ".dat") == NULL){printf("Wrong Batch File! (-xxx.bat)\n");return(false);}
-      } 
-    } else if (counter == 2){
-      m = match(str,ptnDate);
-      if(!m){printf("Wrong Date Format! (YYYY-MM-DD)\n");return(false);} 
-      m = 0;
-    } else if (counter == 3){
-      m = match(str,ptnTime);
-      if(!m){printf("Wrong Time Format! (hh:mm)\n");return(false);} 
-      m = 0;
-    } else if (counter == 4){
-      m = match(str,ptnHour);
-      if(!m){printf("Wrong Hour Format! (n.n)\n");return(false);} 
-      m = 0;
-    } else if (counter == 5){
-      if(strstr(keyword, "bookDevice") != NULL){return true;} //Device checking in other function
-      else{
-        m = match(str,ptnPersonNumber);
-        if(!m){printf("Wrong Person Number! (n)\n");return(false);}
-        else {return(true);} //Device checking in other function
-      }
-    }
-    str = strtok (NULL, " ");
-    if(str != NULL){counter++;}
-  }
-  if(strstr(keyword, "addMeeting") != NULL && counter < 5){printf("Inadequate parameters!\n"); return (false);}
-  if(strstr(keyword, "addPresentation") != NULL && counter < 7){printf("Inadequate parameters!\n"); return (false);}
-  if(strstr(keyword, "addConference") != NULL && counter < 7){printf("Inadequate parameters!\n"); return (false);}
-  if(strstr(keyword, "bookDevice") != NULL && counter < 4){printf("Inadequate parameters!\n"); return (false);}
-  if(strstr(keyword, "addBatch") != NULL && counter < 1) {printf("Missing filename!\n"); return (false);}
-  return(true);
-}
 //<===============================function==============================>
 int main(void) {
   char buf[80]={0}; // Child read
   char buf2[80]={0}; //Parent read
 
-  //remove("allBooking.log"); <================================Remember!!!!!
+  remove("allBooking.log");
   remove("FCFSBookingAccepted.log");
   remove("FCFSBookingRejected.log");
   remove("PRIOSortedBooking.log");
@@ -1749,7 +1766,7 @@ int main(void) {
         }
         //write(pipes[0][1],"end",3);
         wait(NULL);
-        //remove("allBooking.log");<================================Remember!!!!!
+        remove("allBooking.log");
         remove("FCFSBookingAccepted.log");
         remove("FCFSBookingRejected.log");
         remove("PRIOSortedBooking.log");
