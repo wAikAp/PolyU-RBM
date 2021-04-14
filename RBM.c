@@ -679,12 +679,12 @@ void batchFileHandler(char *filename){
   }
   while (fgets( line, 100, infilep ) != NULL ) {
     char original_input[100]; char line2[100];
-    strncpy(original_input, line, strlen(line)-1);
-    original_input[strlen(line)-1] = '\0';
-    strncpy(line2, line, strlen(line)-1);
-    line2[strlen(line)-1] = '\0';
-    if(devicePairChecking(line) && commandChecking(line2)){ //Device pair checking
-      fprintf(outfilep, "%s\n", original_input); //Write to allBooking.log
+    strncpy(original_input, line, strlen(line));
+    original_input[strlen(line)] = '\0';
+    strncpy(line2, line, strlen(line));
+    line2[strlen(line)] = '\0';
+    if(devicePairChecking(line) && commandChecking(line2)){
+      fprintf(outfilep, "%s", original_input); //Write to allBooking.log
     } else {
       no_error = false;
       if (counter_print_error == 0) {printf("Error! Please check the batch file\n"); counter_print_error++;}
