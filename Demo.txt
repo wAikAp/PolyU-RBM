@@ -1,6 +1,6 @@
 1. Success Input in Booking message
 addMeeting –tenant_A 2021-05-16 10:00 3.0 9 projector_2K screen_100;
-addMeeting –tenant_A 2021-05-16 10:00 3.0 9 webcam_UHD monitor_75; 
+addMeeting –tenant_A 2021-05-16 10:00 3.0 9 webcam_UHD monitor_75;
 addMeeting –tenant_A 2021-05-16 10:00 3.0 9;
 addPresentation –tenant_B 2021-05-14 08:00 3.0 12 projector_4K screen_150;
 addConference –tenant_E 2021-05-16 14:00 2.0 15 webcam_UHD monitor_75;

@@ -6,7 +6,8 @@
 #include <stdbool.h>
 /*Regex*/
 #include <regex.h>
-
+//for Ubuntu c++
+#include <sys/wait.h>
 //<===============================Variables=============================>
 /*First Keyword*/
 const char* ADDMET = "addMeeting";
@@ -1146,7 +1147,7 @@ void print_rejected(int algorithm){
     if(i==0){
       Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
-      fprintf(Output, "%s%d%s\n", "Tenant_A (there are ",tenant_A_count," bookings rejected)");
+      fprintf(Output, "%s%d%s\n", "Tenant_A (there are ",tenant_A_count," bookings rejected):");
       fprintf(Output, "%s\n", "");
       fprintf(Output, "%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
       for(j=0;j<74;j++){
@@ -1165,7 +1166,7 @@ void print_rejected(int algorithm){
     if(i==0){
       Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
-      fprintf(Output, "%s%d%s\n", "Tenant_B (there are ",tenant_B_count," bookings rejected)");
+      fprintf(Output, "%s%d%s\n", "Tenant_B (there are ",tenant_B_count," bookings rejected):");
       fprintf(Output, "%s\n", "");
       fprintf(Output, "%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
       for(j=0;j<74;j++){
@@ -1184,7 +1185,7 @@ void print_rejected(int algorithm){
     if(i==0){
       Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
-      fprintf(Output, "%s%d%s\n", "Tenant_C (there are ",tenant_C_count," bookings rejected)");
+      fprintf(Output, "%s%d%s\n", "Tenant_C (there are ",tenant_C_count," bookings rejected):");
       fprintf(Output, "%s\n", "");
       fprintf(Output, "%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
       for(j=0;j<74;j++){
@@ -1203,7 +1204,7 @@ void print_rejected(int algorithm){
     if(i==0){
       Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
-      fprintf(Output, "%s%d%s\n", "Tenant_D (there are ",tenant_D_count," bookings rejected)");
+      fprintf(Output, "%s%d%s\n", "Tenant_D (there are ",tenant_D_count," bookings rejected):");
       fprintf(Output, "%s\n", "");
       fprintf(Output, "%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
       for(j=0;j<74;j++){
@@ -1222,7 +1223,7 @@ void print_rejected(int algorithm){
     if(i==0){
       Output = fopen("RBM_Report_G15.txt", "a");
       fprintf(Output, "%s\n", "");
-      fprintf(Output, "%s%d%s\n", "Tenant_E (there are ",tenant_E_count," bookings rejected)");
+      fprintf(Output, "%s%d%s\n", "Tenant_E (there are ",tenant_E_count," bookings rejected):");
       fprintf(Output, "%s\n", "");
       fprintf(Output, "%-13s%-8s%-8s%-15s%s\n","Date","Start","End","Type","Device");
       for(j=0;j<74;j++){
@@ -1462,9 +1463,9 @@ void printSummaryReport(){
   fprintf(Output, "%s\n", "Performance:");
   fprintf(Output, "%s\n", "");
   fprintf(Output, "%11s\n","For FCFS:");
-  fprintf(Output, "%44s%d\n","Total Number of Bookings Received:", total_booking_received);
-  fprintf(Output, "%44s%d\n","Number of Bookings Assigned:", fcfs_booking_assigned);
-  fprintf(Output, "%44s%d\n","Number of Bookings Rejected:", fcfs_booking_rejected);
+  fprintf(Output, "%44s%d\n","Total Number of Bookings Received: ", total_booking_received);
+  fprintf(Output, "%44s%d\n","Number of Bookings Assigned: ", fcfs_booking_assigned);
+  fprintf(Output, "%44s%d\n","Number of Bookings Rejected: ", fcfs_booking_rejected);
   fprintf(Output, "%s\n", "");
   fprintf(Output, "%35s\n","Utilization of Time Slot:");
   fprintf(Output, "%24s","room_A"); fprintf(Output, "%8s%.1f","- ",(1.0-((float)(168-fcfs_count_roomA)) / 168.0) * 100.0); fprintf(Output, "%s\n","%");
