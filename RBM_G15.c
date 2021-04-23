@@ -660,7 +660,7 @@ void batchFileHandler(char *filename){
   strncpy(file, filename, strlen(filename)-2);
   file[strlen(filename)-2] = '\0';
   infilep = fopen(file, "r");
-  outfilep = fopen("allBooking.log", "a");
+  outfilep = fopen(".allBooking.log", "a");
   if (infilep == NULL) {
     printf("File not found!\n");
     exit(1);
@@ -1337,7 +1337,7 @@ void start_printBookings(int algorithm){
   FILE *outallBooking, *Accepted, *Rejected;
   int count_booking = 0; int count_assigned = 0; int count_rejected = 0; 
   if(algorithm == 1){
-    outallBooking = fopen("allBooking.log", "r");
+    outallBooking = fopen(".allBooking.log", "r");
     Accepted = fopen("FCFSBookingAccepted.log", "a");
     Rejected = fopen("FCFSBookingRejected.log", "a");
   } else if (algorithm == 2){
@@ -1345,14 +1345,14 @@ void start_printBookings(int algorithm){
     Accepted = fopen("PRIOBookingAccepted.log", "a");
     Rejected = fopen("PRIOBookingRejected.log", "a");
     PRIOSortedBooking = fopen ("PRIOSortedBooking.log", "a");
-    outallBooking = fopen("allBooking.log", "r");
+    outallBooking = fopen(".allBooking.log", "r");
     while (fscanf(outallBooking, "%[^\n]\n", input_from_file) != EOF){
       count_cmd_for_keyword(input_from_file);
     }
     char conference[conference_count][255]; char presentation[presentation_count][255]; 
     char meeting[meeting_count][255]; char device[device_count][255];
     fclose(outallBooking);
-    outallBooking = fopen("allBooking.log", "r");
+    outallBooking = fopen(".allBooking.log", "r");
     while (fscanf(outallBooking, "%[^\n]\n", input_from_file) != EOF){
       char temp_input[255];
       strncpy(temp_input, input_from_file, strlen(input_from_file));
@@ -1504,7 +1504,7 @@ int main(void) {
   char buf[80]={0}; // Child read
   char buf2[80]={0}; //Parent read
 
-  remove("allBooking.log");
+  remove(".allBooking.log");
   remove("FCFSBookingAccepted.log");
   remove("FCFSBookingRejected.log");
   remove("PRIOSortedBooking.log");
@@ -1615,7 +1615,7 @@ int main(void) {
         }
         //write(pipes[0][1],"end",3);
         wait(NULL);
-        remove("allBooking.log");
+        remove(".allBooking.log");
         remove("FCFSBookingAccepted.log");
         remove("FCFSBookingRejected.log");
         remove("PRIOSortedBooking.log");
@@ -1662,7 +1662,7 @@ int main(void) {
         user_input[strlen(input)-1] = '\0';
         if(devicePairChecking(input)){ //Check the device pair
           //Open allBooking.log
-          outallBooking = fopen("allBooking.log", "a");
+          outallBooking = fopen(".allBooking.log", "a");
           if (outallBooking == NULL) {
             printf("Error in opening output file\n");
             exit(1);
