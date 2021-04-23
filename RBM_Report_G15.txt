@@ -1,0 +1,98 @@
+*** Room Booking – ACCEPTED / FCFS ***
+
+
+Tenant_C has the following bookings:
+
+Date         Start   End     Type           Room     Device
+==========================================================================
+2021-05-10   00:00   24:00   Presentation   room_C   projector_4K
+                                                     screen_150
+- End -   
+==========================================================================
+
+*** Room Booking – REJECTED / FCFS ***
+
+Tenant_A (there are 1 bookings rejected)
+
+Date         Start   End     Type           Device
+==========================================================================
+2021-05-10   00:00   24:00   Conference     webcam_UHD
+                                            monitor_50
+
+Tenant_B (there are 1 bookings rejected)
+
+Date         Start   End     Type           Device
+==========================================================================
+2021-05-10   00:00   24:00   Meeting        webcam_UHD
+                                            monitor_50
+- End -   
+==========================================================================
+
+*** Room Booking – ACCEPTED / PRIO ***
+
+Tenant_A has the following bookings:
+
+Date         Start   End     Type           Room     Device
+==========================================================================
+2021-05-10   00:00   24:00   Conference     room_C   webcam_UHD
+                                                     monitor_50
+- End -   
+==========================================================================
+
+*** Room Booking – REJECTED / PRIO ***
+
+Tenant_B (there are 1 bookings rejected)
+
+Date         Start   End     Type           Device
+==========================================================================
+2021-05-10   00:00   24:00   Meeting        webcam_UHD
+                                            monitor_50
+
+Tenant_C (there are 1 bookings rejected)
+
+Date         Start   End     Type           Device
+==========================================================================
+2021-05-10   00:00   24:00   Presentation   projector_4K
+                                            screen_150
+- End -   
+==========================================================================
+
+*** Room Booking Manager – Summary Report ***
+
+Performance:
+
+  For FCFS:
+          Total Number of Bookings Received:3
+                Number of Bookings Assigned:1
+                Number of Bookings Rejected:2
+
+          Utilization of Time Slot:
+                  room_A      - 0.0%
+                  room_B      - 0.0%
+                  room_C      - 14.3%
+                  webcam_FHD  - 0.0%
+                  webcam_UHD  - 0.0%
+                  monitor_50  - 0.0%
+                  monitor_75  - 0.0%
+                projector_2K  - 0.0%
+                projector_4K  - 14.3%
+                  screen_100  - 0.0%
+                  screen_150  - 14.3%
+
+  For PRIO:
+          Total Number of Bookings Received:3
+                Number of Bookings Assigned:1
+                Number of Bookings Rejected:2
+
+          Utilization of Time Slot:
+                  room_A      - 0.0%
+                  room_B      - 0.0%
+                  room_C      - 14.3%
+                  webcam_FHD  - 0.0%
+                  webcam_UHD  - 14.3%
+                  monitor_50  - 7.1%
+                  monitor_75  - 0.0%
+                projector_2K  - 0.0%
+                projector_4K  - 0.0%
+                  screen_100  - 0.0%
+                  screen_150  - 0.0%

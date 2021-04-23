@@ -1,0 +1,3 @@
+addPresentation –tenant_C 2021-05-10 00:00 24.0 12 projector_4K screen_150;
+addMeeting –tenant_B 2021-05-10 00:00 24.0 11 webcam_UHD monitor_50;
+addConference –tenant_A 2021-05-10 00:00 24.0 15 webcam_UHD monitor_50;
