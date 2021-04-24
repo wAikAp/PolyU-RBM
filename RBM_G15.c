@@ -642,7 +642,9 @@ char* batchFileName(char *input){
   while (str != NULL) {
     //Get the .dat filename
     if (strstr(str, ".dat")!=NULL){
-      strcpy(&str[0], &str[0 + 3]);
+      //printf("%s\n",str);
+      //strcpy(&str[0], &str[0 + 1]);
+      //printf("%s\n",str);
       return (str);
     }
     //find next string
@@ -659,6 +661,8 @@ void batchFileHandler(char *filename){
   bool no_error = true;
   strncpy(file, filename, strlen(filename)-2);
   file[strlen(filename)-2] = '\0';
+  printf("%s\n",filename);
+  printf("%s\n",file);
   infilep = fopen(file, "r");
   outfilep = fopen(".allBooking.dat", "a");
   if (infilep == NULL) {
