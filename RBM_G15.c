@@ -542,7 +542,7 @@ bool devicePairChecking(char *input){
       return(true);
     }
   }
-  //Presentation can only apply projector and screen
+  /*//Presentation can only apply projector and screen
   if(strstr(keyword, "addPresentation")!=NULL){
     if (strstr(device_1, "webcam")!=NULL || strstr(device_1, "monitor")!=NULL) {
       return(false);
@@ -553,7 +553,7 @@ bool devicePairChecking(char *input){
     if (strstr(device_1, "screen")!=NULL || strstr(device_1, "projector")!=NULL) {
       return(false);
     }
-  }
+  }*/
   if(strstr(device_1, "projector")!=NULL){
     if(strstr(device_2, "screen")!=NULL){
       return(true);
@@ -643,7 +643,7 @@ char* batchFileName(char *input){
     //Get the .dat filename
     if (strstr(str, ".dat")!=NULL){
       //printf("%s\n",str);
-      //strcpy(&str[0], &str[0 + 1]);
+      strcpy(&str[0], &str[0 + 1]);
       //printf("%s\n",str);
       return (str);
     }
@@ -661,8 +661,8 @@ void batchFileHandler(char *filename){
   bool no_error = true;
   strncpy(file, filename, strlen(filename)-2);
   file[strlen(filename)-2] = '\0';
-  printf("%s\n",filename);
-  printf("%s\n",file);
+  //printf("%s\n",filename);
+  //printf("%s\n",file);
   infilep = fopen(file, "r");
   outfilep = fopen(".allBooking.dat", "a");
   if (infilep == NULL) {
@@ -800,11 +800,13 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
   strncpy(column_4_to_5, input, strlen(input));
   column_4_to_5[strlen(input)] = '\0';
   str = strtok (column_4_to_5," ");
+  //printf("input:%s\n",input);
   while (str != NULL) {
     int m = 0;
     m = match(str,ptnKeyWord);
     if(m){
       if (strstr(str,"addMeeting")!=NULL){
+        strcpy(keyword,"addMeeting");
         fprintf(Output_schedule, "%-15s","Meeting");
       } else if (strstr(str,"addPresentation")!=NULL){
         fprintf(Output_schedule, "%-15s","Presentation");
@@ -835,64 +837,62 @@ void printAppointmentSchedule(char *input, int accept_or_reject){
   str = strtok (column_6," ");
   while (str != NULL) {
     int m = 0;
+    /*
     m = match(str,ptnTenant);
     if(m){
       m = 0;
       goto NEXT;
-    }
-    if(strstr(keyword,"bookDevice")!=NULL){ //Print device in book device
-      if(counter==5){
-         m = match(str,ptnDevice);
-         if(m){
-           fprintf(Output_schedule, "%s\n",str);
-           m = 0;
-         }
+    }*/
+    m = match(str,ptnDevice);
+    if(m){
+      if(strstr(str, ";") != NULL) {
+        str[strlen(str)-1] = 0;
       }
-      if(counter==6){
-         m = match(str,ptnDevice);
-         if(m){
-          if(accept_or_reject == 0){
-            fprintf(Output_schedule, "%54s\n",str);
+      //printf("str=:%s\n",str);
+      if(strstr(keyword,"bookDevice")!=NULL){ //Print device in book device
+        if(strstr(str, "webcam")!=NULL || strstr(str, "monitor")!=NULL || strstr(str, "projector")!=NULL || strstr(str, "screen")!=NULL){
+          if(counter == 0){
+              fprintf(Output_schedule, "%s\n",str);
+              counter++;
+          } else if (counter == 1){
+              if(accept_or_reject == 0){
+                fprintf(Output_schedule, "%-13s%-8s%-8s%-15s%s\n"," "," "," "," ",str);
+                //fprintf(Output_schedule, "%-55s\n",str);
+              } else {
+                fprintf(Output_schedule, "%-13s%-8s%-8s%-15s%-9s%s\n"," "," "," "," "," ",str);
+                //fprintf(Output_schedule, "%-64s\n",str);
+              }
+          }
+        } 
+      } else {
+        //printf("%s\n",str);
+          if(strstr(str, "webcam")!=NULL || strstr(str, "monitor")!=NULL || strstr(str, "projector")!=NULL || strstr(str, "screen")!=NULL){
+            if(counter == 0){
+              fprintf(Output_schedule, "%s\n",str);
+              counter++;
+            } else if (counter == 1){
+                if(accept_or_reject == 1){
+                  fprintf(Output_schedule, "%-13s%-8s%-8s%-15s%-9s%s\n"," "," "," "," "," ",str);
+                  //fprintf(Output_schedule, "%64s\n",str);
+                } else if (accept_or_reject == 0){
+                  fprintf(Output_schedule, "%-13s%-8s%-8s%-15s%s\n"," "," "," "," ",str);
+                  //fprintf(Output_schedule, "%55s\n",str);
+                }
+            }
           } else {
-            fprintf(Output_schedule, "%63s\n",str);
-          }
-           m = 0;
-         }
+            if(strstr(str, "room")!=NULL || strstr(str, "tenant")!=NULL){
+              ;
+            } else {
+              fprintf(Output_schedule, "%s\n","*");
+            }
+          } 
       }
-    } else {
-      if(accept_or_reject == 0){
-        if (counter == 5){
-          if(!exist_devices){
-            fprintf(Output_schedule, "%s\n","*");
-          }
-        }
-      }
-      if(counter==6){ //Print device in room booking
-        m = match(str,ptnRoom);
-        if(m){
-          fprintf(Output_schedule, "%s\n","*");
-          m = 0;
-        } else {
-          fprintf(Output_schedule, "%s\n",str);
-          m = 0;
-        }
-      }
-      if(counter==7){
-        m = match(str,ptnDevice);
-        if(m){
-          if(accept_or_reject == 1){
-            fprintf(Output_schedule, "%63s\n",str);
-            m = 0;
-          } else if (accept_or_reject == 0){
-            fprintf(Output_schedule, "%54s\n",str);
-            m = 0;
-          }
-        }
-      }
+      m = 0;
     }
-
-    NEXT:counter++;
     str = strtok (NULL, " ");
+  }
+  if(strstr(keyword,"addMeeting")!=NULL && counter == 0){
+    fprintf(Output_schedule, "%s\n","*");
   }
   fclose(Output_schedule);
 }
@@ -1662,6 +1662,9 @@ int main(void) {
                 strstr(input, "addConference")!=NULL ||
                 strstr(input, "bookDevice")!=NULL){
         char user_input[100];
+        //strncpy(user_input, input, strlen(input));
+        //printf("%s\n",user_input);
+        //user_input[strlen(input)] = '\0';
         strncpy(user_input, input, strlen(input)-1);
         user_input[strlen(input)-1] = '\0';
         if(devicePairChecking(input)){ //Check the device pair
